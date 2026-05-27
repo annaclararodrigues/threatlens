@@ -11,11 +11,20 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
-    public String generateToken(String email) {
+    public String generateAccessToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new java.util.Date())
-                .setExpiration(new java.util.Date(System.currentTimeMillis() + 3600*24*1000L))
+                .setExpiration(new java.util.Date(System.currentTimeMillis() + 1 * 60 * 1000L)) // 15 minutos
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes()))
+                .compact();
+    }
+
+    public String generateRefreshToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(new java.util.Date())
+                .setExpiration(new java.util.Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000L)) // 7 dias
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes()))
                 .compact();
     }
