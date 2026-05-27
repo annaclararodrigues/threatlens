@@ -9,6 +9,7 @@ public record RegisterRequestDTO(
         @NotBlank
         @Email
         String email,
+        //TO-DO : Adicionar validação do tamanho e regras da senha
         @NotBlank
         String password) {
 }

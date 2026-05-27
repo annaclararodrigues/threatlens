@@ -1,12 +1,12 @@
 package com.backend.threatlens.service;
 
-import com.backend.threatlens.dto.request.LoginRequestDTO;
-import com.backend.threatlens.dto.request.RegisterRequestDTO;
-import com.backend.threatlens.dto.request.VerifyCodeRequestDTO;
-import com.backend.threatlens.dto.response.AuthResponseDTO;
+import com.backend.threatlens.dto.request.*;
+import com.backend.threatlens.dto.response.AuthTokens;
 import com.backend.threatlens.dto.response.MessageResponseDTO;
+import com.backend.threatlens.entity.RefreshTokenEntity;
 import com.backend.threatlens.entity.UserEntity;
 import com.backend.threatlens.entity.VerificationCodeEntity;
+import com.backend.threatlens.enums.CodeType;
 import com.backend.threatlens.repository.UserRepository;
 import com.backend.threatlens.repository.VerificationCodeRepository;
 import com.backend.threatlens.utils.JwtUtil;
@@ -30,6 +30,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public MessageResponseDTO register(RegisterRequestDTO registerRequestDTO) {
@@ -37,10 +38,11 @@ public class AuthService {
             throw new RuntimeException("Email already in use");
         }
 
-        UserEntity user = new UserEntity();
-        user.setUsername(registerRequestDTO.username());
-        user.setEmail(registerRequestDTO.email());
-        user.setPassword(passwordEncoder.encode(registerRequestDTO.password()));
+        UserEntity user = UserEntity.builder()
+                .username(registerRequestDTO.username())
+                .email(registerRequestDTO.email())
+                .password(passwordEncoder.encode(registerRequestDTO.password()))
+                .build();
         userRepository.save(user);
 
         sendNewVerificationCode(registerRequestDTO.email());
@@ -49,30 +51,33 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponseDTO verifyCode(VerifyCodeRequestDTO dto) {
-        VerificationCodeEntity verificationCode = verificationCodeRepository
-                .findByEmailAndCodeAndIsUsedFalse(dto.email(), dto.code())
+    public AuthTokens verifyCode(VerifyCodeRequestDTO dto) {
+        VerificationCodeEntity code = verificationCodeRepository
+                .findByEmailAndCodeAndCodeTypeAndIsUsedFalse(dto.email(), dto.code(), dto.codeType())
                 .orElseThrow(() -> new RuntimeException("Código inválido ou já utilizado."));
 
-        if (verificationCode.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (code.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Código expirado. Solicite um novo.");
         }
 
-        verificationCode.setUsed(true);
-        verificationCodeRepository.save(verificationCode);
+        code.setUsed(true);
+        verificationCodeRepository.save(code);
 
         UserEntity user = userRepository.findByEmail(dto.email())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
 
-        user.setEmailVerified(true);
-        userRepository.save(user);
+        if (dto.codeType() == CodeType.REGISTER) {
+            user.setEmailVerified(true);
+            userRepository.save(user);
+        }
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail());
+        String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
-        return new AuthResponseDTO(token, user.getUsername(), user.getEmail());
+        return new AuthTokens(accessToken, refreshToken, user.getUsername(), user.getEmail());
     }
 
-    public AuthResponseDTO login(LoginRequestDTO loginRequestDTO) {
+    public AuthTokens login(LoginRequestDTO loginRequestDTO) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 loginRequestDTO.email(),
                 loginRequestDTO.password()
@@ -85,9 +90,10 @@ public class AuthService {
             throw new RuntimeException("E-mail não verificado. Verifique sua caixa de entrada.");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail());
+        String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
-        return new AuthResponseDTO(token, user.getUsername(), user.getEmail());
+        return new AuthTokens(accessToken, refreshToken, user.getUsername(), user.getEmail());
     }
 
     @Transactional
@@ -103,15 +109,116 @@ public class AuthService {
     private void sendNewVerificationCode(String email) {
         String code = String.format("%04d", new Random().nextInt(10000));
 
-        verificationCodeRepository.deleteByEmail(email);
+        verificationCodeRepository.deleteByEmailAndCodeType(email, CodeType.REGISTER);
 
-        VerificationCodeEntity verificationCode = new VerificationCodeEntity();
-        verificationCode.setEmail(email);
-        verificationCode.setCode(code);
-        verificationCode.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        VerificationCodeEntity verificationCode = VerificationCodeEntity.builder()
+                .email(email)
+                .code(code)
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .codeType(CodeType.REGISTER)
+                .build();
         verificationCodeRepository.save(verificationCode);
 
         emailService.sendVerificationCode(email, code);
+    }
+
+    @Transactional
+    public MessageResponseDTO resendPasswordCode(String email) {
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Se este e-mail estiver cadastrado, você receberá um novo código."));
+
+        verificationCodeRepository.deleteByEmailAndCodeType(email, CodeType.RESET_PASSWORD);
+
+        String code = String.format("%04d", new Random().nextInt(10000));
+
+        VerificationCodeEntity entity = VerificationCodeEntity.builder()
+                .email(email)
+                .codeType(CodeType.RESET_PASSWORD)
+                .code(code)
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .build();
+
+        verificationCodeRepository.save(entity);
+        emailService.sendVerificationCode(email, code);
+
+        return new MessageResponseDTO("Se este e-mail estiver cadastrado, um novo código foi enviado.");
+    }
+
+    @Transactional
+    public MessageResponseDTO forgotPassword(ForgotPasswordRequestDTO dto) {
+        userRepository.findByEmail(dto.email())
+                .orElseThrow(() -> new RuntimeException("Se este e-mail estiver cadastrado, você receberá um código."));
+
+        verificationCodeRepository.deleteByEmailAndCodeType(dto.email(), CodeType.RESET_PASSWORD);
+
+        String code = String.format("%04d", new Random().nextInt(10000));
+
+        VerificationCodeEntity entity = VerificationCodeEntity.builder()
+                .email(dto.email())
+                .codeType(CodeType.RESET_PASSWORD)
+                .code(code)
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .build();
+
+        verificationCodeRepository.save(entity);
+
+        emailService.sendVerificationCode(dto.email(), code);
+
+        return new MessageResponseDTO("Se este e-mail estiver cadastrado, você receberá um código de redefinição.");
+    }
+
+    @Transactional
+    public MessageResponseDTO resetPassword(ResetPasswordRequestDTO dto, String email) {
+        if (!dto.password().equals(dto.passwordConfirm())) {
+            throw new RuntimeException("As senhas não coincidem.");
+        }
+
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        user.setPassword(passwordEncoder.encode(dto.password()));
+        userRepository.save(user);
+
+        return new MessageResponseDTO("Senha redefinida com sucesso.");
+    }
+
+    public MessageResponseDTO changePassword(ChangePasswordRequestDTO dto, String email) {
+        if (!dto.newPassword().equals(dto.newPasswordConfirm())) {
+            throw new RuntimeException("As senhas não coincidem.");
+        }
+
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        if (!passwordEncoder.matches(dto.currentPassword(), user.getPassword())) {
+            throw new RuntimeException("Senha atual incorreta.");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.newPassword()));
+        userRepository.save(user);
+
+        return new MessageResponseDTO("Senha alterada com sucesso.");
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.revoke(refreshToken);
+        }
+    }
+
+    public AuthTokens refresh(String refreshToken) {
+        RefreshTokenEntity entity = refreshTokenService.validate(refreshToken);
+
+        refreshTokenService.revoke(refreshToken);
+
+        String accessToken = jwtUtil.generateAccessToken(entity.getEmail());
+        String newRefreshToken = refreshTokenService.createRefreshToken(entity.getEmail());
+
+        UserEntity user = userRepository.findByEmail(entity.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        return new AuthTokens(accessToken, newRefreshToken, user.getUsername(), user.getEmail());
     }
 
 }
