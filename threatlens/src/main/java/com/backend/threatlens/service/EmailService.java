@@ -23,8 +23,7 @@ public class EmailService {
         message.setText(
                 "Olá!\n\n" +
                 "Seu código de verificação é: " + code + "\n\n" +
-                "O código expira em 10 minutos.\n\n" +
-                "Se você não criou uma conta no ThreatLens, ignore este e-mail."
+                "O código expira em 10 minutos.\n\n"
         );
         mailSender.send(message);
     }
