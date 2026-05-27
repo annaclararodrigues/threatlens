@@ -1,0 +1,15 @@
+package com.backend.threatlens.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
+public record RegisterRequestDTO(
+        @NotBlank
+        String username,
+        @NotBlank
+        @Email
+        String email,
+        //TO-DO : Adicionar validação do tamanho e regras da senha
+        @NotBlank
+        String password) {
+}
