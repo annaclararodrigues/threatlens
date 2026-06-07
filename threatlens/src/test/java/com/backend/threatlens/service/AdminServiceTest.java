@@ -4,7 +4,11 @@ import com.backend.threatlens.dto.response.PageResponseDTO;
 import com.backend.threatlens.dto.response.UserSummaryResponseDTO;
 import com.backend.threatlens.entity.UserEntity;
 import com.backend.threatlens.enums.Role;
+import com.backend.threatlens.exception.BusinessRuleViolationException;
+import com.backend.threatlens.exception.ResourceNotFoundException;
+import com.backend.threatlens.repository.RefreshTokenRepository;
 import com.backend.threatlens.repository.UserRepository;
+import com.backend.threatlens.repository.VerificationCodeRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,9 +19,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +33,12 @@ class AdminServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Mock
+    private VerificationCodeRepository verificationCodeRepository;
 
     @InjectMocks
     private AdminService adminService;
@@ -152,6 +164,44 @@ class AdminServiceTest {
                 assertThat(result.totalPages()).isEqualTo(5);
                 assertThat(result.last()).isFalse();
             }
+        }
+    }
+
+    @Nested
+    class DeleteUser {
+
+        @Test
+        void userNotFound_throwsResourceNotFoundException() {
+            UUID id = UUID.randomUUID();
+            when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> adminService.deleteUser(id))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Usuário não encontrado.");
+        }
+
+        @Test
+        void adminUser_throwsAdminDeletionNotAllowedException() {
+            UUID id = UUID.randomUUID();
+            UserEntity admin = buildUser(id, "admin", "admin@test.com", Role.ADMIN, true);
+            when(userRepository.findById(id)).thenReturn(Optional.of(admin));
+
+            assertThatThrownBy(() -> adminService.deleteUser(id))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessage("Não é permitido remover um administrador.");
+        }
+
+        @Test
+        void regularUser_deletesUserAndCleansUpTokens() {
+            UUID id = UUID.randomUUID();
+            UserEntity user = buildUser(id, "anna", "anna@test.com", Role.USER, true);
+            when(userRepository.findById(id)).thenReturn(Optional.of(user));
+
+            adminService.deleteUser(id);
+
+            verify(refreshTokenRepository).deleteByEmail("anna@test.com");
+            verify(verificationCodeRepository).deleteByEmail("anna@test.com");
+            verify(userRepository).delete(user);
         }
     }
 

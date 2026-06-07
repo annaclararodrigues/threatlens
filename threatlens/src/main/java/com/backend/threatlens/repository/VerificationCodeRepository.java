@@ -11,5 +11,7 @@ public interface VerificationCodeRepository extends JpaRepository<VerificationCo
 
     Optional<VerificationCodeEntity> findByEmailAndCodeAndCodeTypeAndIsUsedFalse(String email, String code, CodeType codeType);
 
+    void deleteByEmail(String email);
+
     void deleteByEmailAndCodeType(String email, CodeType codeType);
 }

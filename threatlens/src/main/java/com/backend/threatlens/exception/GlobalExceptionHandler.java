@@ -38,6 +38,18 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponseDTO.of("Conta desativada. Entre em contato com o suporte."));
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponseDTO> handleResourceNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponseDTO.of(ex.getMessage()));
+    }
+
+    @ExceptionHandler(BusinessRuleViolationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleBusinessRule(BusinessRuleViolationException ex) {
+        return ResponseEntity.status(422)
+                .body(ErrorResponseDTO.of(ex.getMessage()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponseDTO> handleRuntime(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)

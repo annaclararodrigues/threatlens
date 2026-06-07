@@ -3,6 +3,9 @@ package com.backend.threatlens.controller;
 import com.backend.threatlens.dto.response.PageResponseDTO;
 import com.backend.threatlens.dto.response.UserSummaryResponseDTO;
 import com.backend.threatlens.enums.Role;
+import com.backend.threatlens.exception.BusinessRuleViolationException;
+import com.backend.threatlens.exception.GlobalExceptionHandler;
+import com.backend.threatlens.exception.ResourceNotFoundException;
 import com.backend.threatlens.service.AdminService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,8 +28,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,6 +49,7 @@ class AdminControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new AdminController(adminService))
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper()))
                 .build();
@@ -128,6 +135,43 @@ class AdminControllerTest {
                         .andExpect(jsonPath("$.page").value(0))
                         .andExpect(jsonPath("$.last").value(true));
             }
+        }
+    }
+
+    @Nested
+    class DeleteUser {
+
+        @Test
+        void validId_returns204() throws Exception {
+            UUID id = UUID.randomUUID();
+            doNothing().when(adminService).deleteUser(id);
+
+            mockMvc.perform(delete("/admin/users/{id}", id))
+                    .andExpect(status().isNoContent());
+
+            verify(adminService).deleteUser(id);
+        }
+
+        @Test
+        void userNotFound_returns404WithMessage() throws Exception {
+            UUID id = UUID.randomUUID();
+            doThrow(new ResourceNotFoundException("Usuário não encontrado."))
+                    .when(adminService).deleteUser(id);
+
+            mockMvc.perform(delete("/admin/users/{id}", id))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("Usuário não encontrado."));
+        }
+
+        @Test
+        void adminUser_returns422WithMessage() throws Exception {
+            UUID id = UUID.randomUUID();
+            doThrow(new BusinessRuleViolationException("Não é permitido remover um administrador."))
+                    .when(adminService).deleteUser(id);
+
+            mockMvc.perform(delete("/admin/users/{id}", id))
+                    .andExpect(status().is(422))
+                    .andExpect(jsonPath("$.message").value("Não é permitido remover um administrador."));
         }
     }
 
