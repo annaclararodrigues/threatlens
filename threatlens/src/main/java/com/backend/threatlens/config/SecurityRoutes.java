@@ -13,5 +13,6 @@ public class SecurityRoutes {
             "/auth/forgot-password",
             "/auth/refresh",
             "/auth/logout",
+            "/posts/telegram"
     };
 }
