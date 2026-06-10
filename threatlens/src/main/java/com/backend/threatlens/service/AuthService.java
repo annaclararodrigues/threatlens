@@ -74,7 +74,7 @@ public class AuthService {
         String accessToken = jwtUtil.generateAccessToken(user.getEmail());
         String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
-        return new AuthTokens(accessToken, refreshToken, user.getUsername(), user.getEmail());
+        return new AuthTokens(accessToken, refreshToken, user.getUsername(), user.getEmail(), user.getRole());
     }
 
     public AuthTokens login(LoginRequestDTO loginRequestDTO) {
@@ -93,7 +93,7 @@ public class AuthService {
         String accessToken = jwtUtil.generateAccessToken(user.getEmail());
         String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
-        return new AuthTokens(accessToken, refreshToken, user.getUsername(), user.getEmail());
+        return new AuthTokens(accessToken, refreshToken, user.getUsername(), user.getEmail(), user.getRole());
     }
 
     @Transactional
@@ -218,7 +218,7 @@ public class AuthService {
         UserEntity user = userRepository.findByEmail(entity.getEmail())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
 
-        return new AuthTokens(accessToken, newRefreshToken, user.getUsername(), user.getEmail());
+        return new AuthTokens(accessToken, newRefreshToken, user.getUsername(), user.getEmail(), user.getRole());
     }
 
 }
