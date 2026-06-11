@@ -1,23 +1,31 @@
 package com.backend.threatlens.controller;
 
-import com.backend.threatlens.dto.response.PostResponse;
-import com.backend.threatlens.repository.posts.TelegramRepository;
+import com.backend.threatlens.dto.request.PostsQueryDTO;
+import com.backend.threatlens.dto.request.StatsQueryDTO;
+import com.backend.threatlens.dto.response.PostStatsDTO;
+import com.backend.threatlens.dto.response.posts.PostsPageResponse;
+import com.backend.threatlens.service.PostsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/posts")
 @RequiredArgsConstructor
 public class PostsController {
 
-    private final TelegramRepository telegramRepository;
+    private final PostsService postsService;
 
-    @GetMapping("/telegram")
-    public List<PostResponse> getTelegramPosts() {
-        return telegramRepository.findAll(null, null, 15, 0);
+    @GetMapping
+    public PostsPageResponse getPosts(@ModelAttribute PostsQueryDTO query) {
+        return postsService.getPosts(query);
     }
+
+    @GetMapping("/stats")
+    public PostStatsDTO getStats(@ModelAttribute StatsQueryDTO query) {
+        return postsService.getStats(query);
+    }
+
 }
