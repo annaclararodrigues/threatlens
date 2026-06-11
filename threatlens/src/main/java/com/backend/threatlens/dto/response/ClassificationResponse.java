@@ -1,9 +1,13 @@
 package com.backend.threatlens.dto.response;
 
+import com.backend.threatlens.enums.RelevanceLevel;
+
+import java.time.LocalDateTime;
+
 public record ClassificationResponse(boolean relevant,
-                                     double  score,
-                                     String  level,
-                                     String  range,
-                                     String  ioc,
-                                     String  classifiedAt) {
+                                     double score,
+                                     RelevanceLevel level,
+                                     String range,
+                                     Boolean ioc,
+                                     LocalDateTime classifiedAt) {
 }
