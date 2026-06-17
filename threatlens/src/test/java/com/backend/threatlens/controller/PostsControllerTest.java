@@ -79,7 +79,7 @@ class PostsControllerTest {
                         .andExpect(jsonPath("$.data").isArray())
                         .andExpect(jsonPath("$.data[0].id").value("id-1"))
                         .andExpect(jsonPath("$.data[0].source").value("TELEGRAM"))
-                        .andExpect(jsonPath("$.data[0].createdAt").value("01/06/2024 10:30"))
+                        .andExpect(jsonPath("$.data[0].createdAt").value("2024-06-01T10:30:00"))
                         .andExpect(jsonPath("$.pagination.page").value(0))
                         .andExpect(jsonPath("$.pagination.size").value(20))
                         .andExpect(jsonPath("$.pagination.total").value(1))

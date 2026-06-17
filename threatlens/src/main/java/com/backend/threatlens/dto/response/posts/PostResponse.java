@@ -12,7 +12,7 @@ public record PostResponse(String id,
                            String title,
                            String content,
                            String author,
-                           @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+                           @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
                            LocalDateTime createdAt,
                            String category,
                            ClassificationResponse classification,
