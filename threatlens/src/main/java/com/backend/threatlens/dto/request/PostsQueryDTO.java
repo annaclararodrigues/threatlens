@@ -4,6 +4,7 @@ import com.backend.threatlens.enums.PostSource;
 import com.backend.threatlens.enums.RelevanceLevel;
 import com.backend.threatlens.enums.SortBy;
 import com.backend.threatlens.enums.SortOrder;
+import com.backend.threatlens.enums.StatsPeriod;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -18,6 +19,7 @@ public class PostsQueryDTO {
     private List<PostSource> sources;
     private RelevanceLevel relevance;
     private String category;
+    private StatsPeriod period = StatsPeriod.ALL;
     private SortBy sort = SortBy.DATE;
     private SortOrder order = SortOrder.DESC;
 

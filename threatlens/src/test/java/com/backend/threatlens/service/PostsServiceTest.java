@@ -563,5 +563,65 @@ class PostsServiceTest {
                 assertThat(captor.getValue().to()).isEqualTo(to);
             }
         }
+
+        @Nested
+        class TimeWindow {
+
+            @Test
+            void periodALL_passesNullDatesToRepo() {
+                when(telegramRepo.count(any())).thenReturn(0L);
+                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
+
+                PostsQueryDTO q = query(0, 20);
+                q.setPeriod(StatsPeriod.ALL);
+
+                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
+                singleSourceService.getPosts(q);
+                verify(telegramRepo).findPage(captor.capture(), anyInt(), anyInt(), any(), any());
+
+                assertThat(captor.getValue().from()).isNull();
+                assertThat(captor.getValue().to()).isNull();
+            }
+
+            @Test
+            void periodDAY_passesFromAsApproximatelyOneDayAgo() {
+                when(telegramRepo.count(any())).thenReturn(0L);
+                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
+
+                LocalDateTime before = LocalDateTime.now().minusDays(1);
+
+                PostsQueryDTO q = query(0, 20);
+                q.setPeriod(StatsPeriod.DAY);
+
+                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
+                singleSourceService.getPosts(q);
+                verify(telegramRepo).findPage(captor.capture(), anyInt(), anyInt(), any(), any());
+
+                LocalDateTime after = LocalDateTime.now().minusDays(1);
+                assertThat(captor.getValue().from()).isBetween(before, after);
+                assertThat(captor.getValue().to()).isNull();
+            }
+
+            @Test
+            void explicitFromTo_overridesPeriod() {
+                when(telegramRepo.count(any())).thenReturn(0L);
+                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
+
+                LocalDateTime from = LocalDateTime.of(2024, 1, 1, 0, 0);
+                LocalDateTime to   = LocalDateTime.of(2024, 1, 31, 23, 59);
+
+                PostsQueryDTO q = query(0, 20);
+                q.setPeriod(StatsPeriod.DAY);
+                q.setFrom(from);
+                q.setTo(to);
+
+                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
+                singleSourceService.getPosts(q);
+                verify(telegramRepo).findPage(captor.capture(), anyInt(), anyInt(), any(), any());
+
+                assertThat(captor.getValue().from()).isEqualTo(from);
+                assertThat(captor.getValue().to()).isEqualTo(to);
+            }
+        }
     }
 }

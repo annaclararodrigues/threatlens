@@ -72,7 +72,7 @@ public class PostsService {
 
     public PostsPageResponse getPosts(PostsQueryDTO query) {
         List<PostsSourceRepository> selectedSources = filterSources(query.getSources());
-        TimeWindow window = buildWindow(query.getFrom(), query.getTo());
+        TimeWindow window = resolveWindow(query.getPeriod(), query.getFrom(), query.getTo());
         PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to());
         int offset = query.getPage() * query.getSize();
 

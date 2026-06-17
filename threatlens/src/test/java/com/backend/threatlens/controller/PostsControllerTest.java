@@ -116,6 +116,7 @@ class PostsControllerTest {
                 assertThat(dto.getSize()).isEqualTo(20);
                 assertThat(dto.getSort()).isEqualTo(SortBy.DATE);
                 assertThat(dto.getOrder()).isEqualTo(SortOrder.DESC);
+                assertThat(dto.getPeriod()).isEqualTo(StatsPeriod.ALL);
                 assertThat(dto.getSources()).isNull();
                 assertThat(dto.getRelevance()).isNull();
             }
@@ -172,6 +173,19 @@ class PostsControllerTest {
                 verify(postsService).getPosts(captor.capture());
 
                 assertThat(captor.getValue().getRelevance()).isEqualTo(RelevanceLevel.HIGH);
+            }
+
+            @Test
+            void periodParam_bindsEnumCorrectly() throws Exception {
+                when(postsService.getPosts(any())).thenReturn(emptyPage());
+
+                mockMvc.perform(get("/posts").param("period", "WEEK"))
+                        .andExpect(status().isOk());
+
+                ArgumentCaptor<PostsQueryDTO> captor = ArgumentCaptor.forClass(PostsQueryDTO.class);
+                verify(postsService).getPosts(captor.capture());
+
+                assertThat(captor.getValue().getPeriod()).isEqualTo(StatsPeriod.WEEK);
             }
 
             @Test
