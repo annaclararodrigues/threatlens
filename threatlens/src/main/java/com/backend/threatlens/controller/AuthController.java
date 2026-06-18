@@ -93,7 +93,7 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, CookieUtil.buildAccessTokenCookie(tokens.accessToken()).toString())
                 .header(HttpHeaders.SET_COOKIE, CookieUtil.buildRefreshTokenCookie(tokens.refreshToken()).toString())
-                .body(new AuthResponseDTO(tokens.username(), tokens.email()));
+                .body(new AuthResponseDTO(tokens.username(), tokens.email(), tokens.role()));
     }
 
     private Optional<String> extractRefreshTokenFromCookie(HttpServletRequest request) {
