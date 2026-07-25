@@ -28,12 +28,25 @@ public class AdminService {
     public void deleteUser(UUID id) {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
-        if (user.getRole() == Role.ADMIN) {
-            throw new BusinessRuleViolationException("Não é permitido remover um administrador.");
+        if (user.getRole() == Role.ADMIN && userRepository.countByRole(Role.ADMIN) <= 1) {
+            throw new BusinessRuleViolationException("Não é permitido remover o último administrador.");
         }
         refreshTokenRepository.deleteByEmail(user.getEmail());
         verificationCodeRepository.deleteByEmail(user.getEmail());
         userRepository.delete(user);
+    }
+
+    @Transactional
+    public void updateUserRole(UUID id, Role newRole) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+        if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN && userRepository.countByRole(Role.ADMIN) <= 1) {
+            throw new BusinessRuleViolationException("Não é permitido remover o último administrador.");
+        }
+
+        user.setRole(newRole);
+        userRepository.save(user);
     }
 
     @Transactional(readOnly = true)
