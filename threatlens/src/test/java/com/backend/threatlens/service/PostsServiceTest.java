@@ -3,7 +3,7 @@ package com.backend.threatlens.service;
 import com.backend.threatlens.dto.request.PostsFilter;
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
-import com.backend.threatlens.dto.response.ClassificationResponse;
+import com.backend.threatlens.dto.response.posts.ClassificationResponse;
 import com.backend.threatlens.dto.response.PostStatsDTO;
 import com.backend.threatlens.dto.response.posts.PostResponse;
 import com.backend.threatlens.dto.response.posts.PostsPageResponse;
