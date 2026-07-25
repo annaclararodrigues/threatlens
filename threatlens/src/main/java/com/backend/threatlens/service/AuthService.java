@@ -7,15 +7,24 @@ import com.backend.threatlens.entity.RefreshTokenEntity;
 import com.backend.threatlens.entity.UserEntity;
 import com.backend.threatlens.entity.VerificationCodeEntity;
 import com.backend.threatlens.enums.CodeType;
+import com.backend.threatlens.exception.BusinessRuleViolationException;
+import com.backend.threatlens.exception.EmailNotVerifiedException;
+import com.backend.threatlens.exception.InvalidRequestException;
+import com.backend.threatlens.exception.ResourceNotFoundException;
 import com.backend.threatlens.repository.UserRepository;
 import com.backend.threatlens.repository.VerificationCodeRepository;
 import com.backend.threatlens.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.Random;
@@ -23,6 +32,8 @@ import java.util.Random;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
 
     private final UserRepository userRepository;
     private final VerificationCodeRepository verificationCodeRepository;
@@ -35,7 +46,7 @@ public class AuthService {
     @Transactional
     public MessageResponseDTO register(RegisterRequestDTO registerRequestDTO) {
         if (userRepository.findByEmail(registerRequestDTO.email()).isPresent()) {
-            throw new RuntimeException("Email already in use");
+            throw new BusinessRuleViolationException("Email already in use");
         }
 
         UserEntity user = UserEntity.builder()
@@ -47,6 +58,8 @@ public class AuthService {
 
         sendNewVerificationCode(registerRequestDTO.email());
 
+        audit("REGISTER", registerRequestDTO.email());
+
         return new MessageResponseDTO("Código de verificação enviado para " + registerRequestDTO.email());
     }
 
@@ -54,17 +67,17 @@ public class AuthService {
     public AuthTokens verifyCode(VerifyCodeRequestDTO dto) {
         VerificationCodeEntity code = verificationCodeRepository
                 .findByEmailAndCodeAndCodeTypeAndIsUsedFalse(dto.email(), dto.code(), dto.codeType())
-                .orElseThrow(() -> new RuntimeException("Código inválido ou já utilizado."));
+                .orElseThrow(() -> new BusinessRuleViolationException("Código inválido ou já utilizado."));
 
         if (code.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Código expirado. Solicite um novo.");
+            throw new BusinessRuleViolationException("Código expirado. Solicite um novo.");
         }
 
         code.setUsed(true);
         verificationCodeRepository.save(code);
 
         UserEntity user = userRepository.findByEmail(dto.email())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
         if (dto.codeType() == CodeType.REGISTER) {
             user.setEmailVerified(true);
@@ -78,28 +91,40 @@ public class AuthService {
     }
 
     public AuthTokens login(LoginRequestDTO loginRequestDTO) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                loginRequestDTO.email(),
-                loginRequestDTO.password()
-        ));
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                    loginRequestDTO.email(),
+                    loginRequestDTO.password()
+            ));
+        } catch (BadCredentialsException ex) {
+            audit("LOGIN_FAILED", loginRequestDTO.email());
+            throw ex;
+        }
 
         UserEntity user = userRepository.findByEmail(loginRequestDTO.email())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + loginRequestDTO.email()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + loginRequestDTO.email()));
 
         if (!user.isEmailVerified()) {
-            throw new RuntimeException("E-mail não verificado. Verifique sua caixa de entrada.");
+            audit("LOGIN_FAILED", loginRequestDTO.email());
+            throw new EmailNotVerifiedException("E-mail não verificado. Verifique sua caixa de entrada.");
         }
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail());
         String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
+
+        audit("LOGIN_SUCCESS", user.getEmail());
 
         return new AuthTokens(accessToken, refreshToken, user.getUsername(), user.getEmail(), user.getRole());
     }
 
     @Transactional
     public MessageResponseDTO resendCode(String email) {
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+        if (user.isEmailVerified()) {
+            throw new BusinessRuleViolationException("E-mail já verificado.");
+        }
 
         sendNewVerificationCode(email);
 
@@ -125,7 +150,7 @@ public class AuthService {
     @Transactional
     public MessageResponseDTO resendPasswordCode(String email) {
         userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Se este e-mail estiver cadastrado, você receberá um novo código."));
+                .orElseThrow(() -> new ResourceNotFoundException("Se este e-mail estiver cadastrado, você receberá um novo código."));
 
         verificationCodeRepository.deleteByEmailAndCodeType(email, CodeType.RESET_PASSWORD);
 
@@ -147,7 +172,7 @@ public class AuthService {
     @Transactional
     public MessageResponseDTO forgotPassword(ForgotPasswordRequestDTO dto) {
         userRepository.findByEmail(dto.email())
-                .orElseThrow(() -> new RuntimeException("Se este e-mail estiver cadastrado, você receberá um código."));
+                .orElseThrow(() -> new ResourceNotFoundException("Se este e-mail estiver cadastrado, você receberá um código."));
 
         verificationCodeRepository.deleteByEmailAndCodeType(dto.email(), CodeType.RESET_PASSWORD);
 
@@ -170,32 +195,36 @@ public class AuthService {
     @Transactional
     public MessageResponseDTO resetPassword(ResetPasswordRequestDTO dto, String email) {
         if (!dto.password().equals(dto.passwordConfirm())) {
-            throw new RuntimeException("As senhas não coincidem.");
+            throw new InvalidRequestException("As senhas não coincidem.");
         }
 
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
         user.setPassword(passwordEncoder.encode(dto.password()));
         userRepository.save(user);
+
+        audit("PASSWORD_CHANGE", email);
 
         return new MessageResponseDTO("Senha redefinida com sucesso.");
     }
 
     public MessageResponseDTO changePassword(ChangePasswordRequestDTO dto, String email) {
         if (!dto.newPassword().equals(dto.newPasswordConfirm())) {
-            throw new RuntimeException("As senhas não coincidem.");
+            throw new InvalidRequestException("As senhas não coincidem.");
         }
 
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
 
         if (!passwordEncoder.matches(dto.currentPassword(), user.getPassword())) {
-            throw new RuntimeException("Senha atual incorreta.");
+            throw new BusinessRuleViolationException("Senha atual incorreta.");
         }
 
         user.setPassword(passwordEncoder.encode(dto.newPassword()));
         userRepository.save(user);
+
+        audit("PASSWORD_CHANGE", email);
 
         return new MessageResponseDTO("Senha alterada com sucesso.");
     }
@@ -204,6 +233,7 @@ public class AuthService {
     public void logout(String refreshToken) {
         if (refreshToken != null && !refreshToken.isBlank()) {
             refreshTokenService.revoke(refreshToken);
+            audit("LOGOUT", null);
         }
     }
 
@@ -216,9 +246,25 @@ public class AuthService {
         String newRefreshToken = refreshTokenService.createRefreshToken(entity.getEmail());
 
         UserEntity user = userRepository.findByEmail(entity.getEmail())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+        audit("TOKEN_REFRESH", user.getEmail());
 
         return new AuthTokens(accessToken, newRefreshToken, user.getUsername(), user.getEmail(), user.getRole());
+    }
+
+    private void audit(String event, String email) {
+        AUDIT_LOG.info("event={} email={} ip={} timestamp={}", event, email, currentClientIp(), LocalDateTime.now());
+    }
+
+    private String currentClientIp() {
+        try {
+            ServletRequestAttributes attributes =
+                    (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+            return attributes.getRequest().getRemoteAddr();
+        } catch (IllegalStateException ex) {
+            return "unknown";
+        }
     }
 
 }

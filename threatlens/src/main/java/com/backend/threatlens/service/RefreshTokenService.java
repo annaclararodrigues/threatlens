@@ -1,6 +1,7 @@
 package com.backend.threatlens.service;
 
 import com.backend.threatlens.entity.RefreshTokenEntity;
+import com.backend.threatlens.exception.InvalidTokenException;
 import com.backend.threatlens.repository.RefreshTokenRepository;
 import com.backend.threatlens.utils.JwtUtil;
 import jakarta.transaction.Transactional;
@@ -32,12 +33,12 @@ public class RefreshTokenService {
 
     public RefreshTokenEntity validate(String token) {
         if (!jwtUtil.isValidToken(token)) {
-            throw new RuntimeException("Refresh token inválido ou expirado.");
+            throw new InvalidTokenException("Refresh token inválido ou expirado.");
         }
 
         RefreshTokenEntity entity = refreshTokenRepository
                 .findByTokenAndIsRevokedFalse(token)
-                .orElseThrow(() -> new RuntimeException("Refresh token revogado ou não encontrado."));
+                .orElseThrow(() -> new InvalidTokenException("Refresh token revogado ou não encontrado."));
 
         return entity;
     }
