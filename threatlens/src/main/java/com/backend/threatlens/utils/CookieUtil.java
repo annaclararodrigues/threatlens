@@ -36,7 +36,7 @@ public class CookieUtil {
                 .httpOnly(true)
                 .secure(false) // alterar para true em produção (requer HTTPS)
                 .sameSite("Strict")
-                .path("/auth/refresh")
+                .path("/")
                 .maxAge(Duration.ofDays(7))
                 .build();
     }
@@ -46,7 +46,7 @@ public class CookieUtil {
                 .httpOnly(true)
                 .secure(false)
                 .sameSite("Strict")
-                .path("/auth/refresh")
+                .path("/")
                 .maxAge(0)
                 .build();
     }
