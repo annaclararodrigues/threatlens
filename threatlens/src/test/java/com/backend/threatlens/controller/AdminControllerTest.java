@@ -164,14 +164,14 @@ class AdminControllerTest {
         }
 
         @Test
-        void adminUser_returns422WithMessage() throws Exception {
+        void lastAdmin_returns409WithMessage() throws Exception {
             UUID id = UUID.randomUUID();
-            doThrow(new BusinessRuleViolationException("Não é permitido remover um administrador."))
+            doThrow(new BusinessRuleViolationException("Não é permitido remover o último administrador."))
                     .when(adminService).deleteUser(id);
 
             mockMvc.perform(delete("/admin/users/{id}", id))
-                    .andExpect(status().is(422))
-                    .andExpect(jsonPath("$.message").value("Não é permitido remover um administrador."));
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.message").value("Não é permitido remover o último administrador."));
         }
     }
 
