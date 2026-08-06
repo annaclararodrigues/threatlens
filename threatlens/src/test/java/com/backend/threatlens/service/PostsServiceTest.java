@@ -3,8 +3,10 @@ package com.backend.threatlens.service;
 import com.backend.threatlens.dto.request.PostsFilter;
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
-import com.backend.threatlens.dto.response.posts.ClassificationResponse;
+import com.backend.threatlens.dto.request.WordCloudQueryDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
+import com.backend.threatlens.dto.response.WordCloudDTO;
+import com.backend.threatlens.dto.response.posts.ClassificationResponse;
 import com.backend.threatlens.dto.response.posts.PostResponse;
 import com.backend.threatlens.dto.response.posts.PostsPageResponse;
 import com.backend.threatlens.enums.PostSource;
@@ -32,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,6 +79,10 @@ class PostsServiceTest {
         q.setPage(page);
         q.setSize(size);
         return q;
+    }
+
+    private PostsSourceRepository.WordCount wordCount(String word, long count) {
+        return new PostsSourceRepository.WordCount(word, count);
     }
 
     // =========================================================================
@@ -622,6 +629,126 @@ class PostsServiceTest {
                 assertThat(captor.getValue().from()).isEqualTo(from);
                 assertThat(captor.getValue().to()).isEqualTo(to);
             }
+        }
+    }
+
+    // =========================================================================
+    // getWordCloud
+    // =========================================================================
+
+    @Nested
+    @MockitoSettings(strictness = Strictness.LENIENT)
+    class GetWordCloud {
+
+        @BeforeEach
+        void stubSources() {
+            when(telegramRepo.source()).thenReturn(PostSource.TELEGRAM);
+            when(secondTelegramRepo.source()).thenReturn(PostSource.TELEGRAM);
+        }
+
+        @Test
+        void singleSource_returnsWordsSortedByCountDesc() {
+            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of(
+                    wordCount("malware", 10),
+                    wordCount("phishing", 25)
+            ));
+
+            WordCloudDTO result = singleSourceService.getWordCloud(new WordCloudQueryDTO());
+
+            assertThat(result.words()).extracting(WordCloudDTO.WordEntry::word)
+                    .containsExactly("phishing", "malware");
+        }
+
+        @Test
+        void multipleSources_sameWordCountsAreSummedAcrossSources() {
+            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of(wordCount("malware", 10)));
+            when(secondTelegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of(wordCount("malware", 5)));
+
+            WordCloudDTO result = multiSourceService.getWordCloud(new WordCloudQueryDTO());
+
+            assertThat(result.words()).hasSize(1);
+            assertThat(result.words().getFirst().word()).isEqualTo("malware");
+            assertThat(result.words().getFirst().count()).isEqualTo(15);
+        }
+
+        @Test
+        void multipleSources_fetchesMoreThanRequestedLimitPerSourceToAvoidMissingWords() {
+            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
+            when(secondTelegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
+
+            WordCloudQueryDTO query = new WordCloudQueryDTO();
+            query.setLimit(50);
+
+            multiSourceService.getWordCloud(query);
+
+            verify(telegramRepo).wordFrequencies(any(), intThat(fetchLimit -> fetchLimit > query.getLimit()));
+            verify(secondTelegramRepo).wordFrequencies(any(), intThat(fetchLimit -> fetchLimit > query.getLimit()));
+        }
+
+        @Test
+        void singleSource_fetchesExactlyTheRequestedLimit() {
+            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
+
+            WordCloudQueryDTO query = new WordCloudQueryDTO();
+            query.setLimit(50);
+
+            singleSourceService.getWordCloud(query);
+
+            verify(telegramRepo).wordFrequencies(any(), eq(50));
+        }
+
+        @Test
+        void resultIsTruncatedToRequestedLimit() {
+            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of(
+                    wordCount("a", 3), wordCount("b", 2), wordCount("c", 1)
+            ));
+
+            WordCloudQueryDTO query = new WordCloudQueryDTO();
+            query.setLimit(2);
+
+            WordCloudDTO result = singleSourceService.getWordCloud(query);
+
+            assertThat(result.words()).extracting(WordCloudDTO.WordEntry::word)
+                    .containsExactly("a", "b");
+        }
+
+        @Test
+        void filterFields_passedToRepo() {
+            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
+
+            WordCloudQueryDTO query = new WordCloudQueryDTO();
+            query.setRelevance(RelevanceLevel.HIGH);
+            query.setCategory("malware");
+
+            ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
+            singleSourceService.getWordCloud(query);
+            verify(telegramRepo).wordFrequencies(captor.capture(), anyInt());
+
+            assertThat(captor.getValue().relevance()).isEqualTo(RelevanceLevel.HIGH);
+            assertThat(captor.getValue().category()).isEqualTo("malware");
+        }
+
+        @Test
+        void limitField_passedToRepo() {
+            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
+
+            WordCloudQueryDTO query = new WordCloudQueryDTO();
+            query.setLimit(30);
+
+            singleSourceService.getWordCloud(query);
+
+            verify(telegramRepo).wordFrequencies(any(), eq(30));
+        }
+
+        @Test
+        void fromAfterTo_throwsBusinessRuleViolationException() {
+            WordCloudQueryDTO query = new WordCloudQueryDTO();
+            query.setFrom(LocalDateTime.of(2024, 2, 1, 0, 0));
+            query.setTo(LocalDateTime.of(2024, 1, 1, 0, 0));
+
+            assertThatThrownBy(() -> singleSourceService.getWordCloud(query))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("'from' can not be after 'to'");
         }
     }
 }

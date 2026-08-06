@@ -2,7 +2,9 @@ package com.backend.threatlens.controller;
 
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
+import com.backend.threatlens.dto.request.WordCloudQueryDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
+import com.backend.threatlens.dto.response.WordCloudDTO;
 import com.backend.threatlens.dto.response.posts.PostsPageResponse;
 import com.backend.threatlens.service.PostsService;
 import jakarta.validation.Valid;
@@ -28,6 +30,11 @@ public class PostsController {
     @GetMapping("/stats")
     public ResponseEntity<PostStatsDTO> getStats(@Valid @ModelAttribute StatsQueryDTO query) {
         return ResponseEntity.ok(postsService.getStats(query));
+    }
+
+    @GetMapping("/wordcloud")
+    public WordCloudDTO getWordCloud(@Valid @ModelAttribute WordCloudQueryDTO query) {
+        return postsService.getWordCloud(query);
     }
 
 }
