@@ -1,4 +1,4 @@
-package com.backend.threatlens.dto.response;
+package com.backend.threatlens.dto.response.posts;
 
 import com.backend.threatlens.enums.RelevanceLevel;
 import com.fasterxml.jackson.annotation.JsonFormat;

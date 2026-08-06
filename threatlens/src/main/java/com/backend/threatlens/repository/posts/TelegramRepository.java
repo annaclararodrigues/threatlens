@@ -1,7 +1,7 @@
 package com.backend.threatlens.repository.posts;
 
 import com.backend.threatlens.dto.request.PostsFilter;
-import com.backend.threatlens.dto.response.ClassificationResponse;
+import com.backend.threatlens.dto.response.posts.ClassificationResponse;
 import com.backend.threatlens.dto.response.posts.PostResponse;
 import com.backend.threatlens.dto.response.posts.TelegramMeta;
 import com.backend.threatlens.enums.PostSource;

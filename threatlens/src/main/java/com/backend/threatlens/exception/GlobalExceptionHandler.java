@@ -4,7 +4,6 @@ import com.backend.threatlens.dto.response.ErrorResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -22,7 +21,7 @@ public class GlobalExceptionHandler {
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             fieldErrors.put(error.getField(), error.getDefaultMessage());
         }
-        return ResponseEntity.status(422)
+        return ResponseEntity.unprocessableEntity()
                 .body(ErrorResponseDTO.ofFields("Dados inválidos.", fieldErrors));
     }
 
@@ -32,10 +31,10 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponseDTO.of("E-mail ou senha incorretos."));
     }
 
-    @ExceptionHandler(DisabledException.class)
-    public ResponseEntity<ErrorResponseDTO> handleDisabled(DisabledException ex) {
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleEmailNotVerified(EmailNotVerifiedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ErrorResponseDTO.of("Conta desativada. Entre em contato com o suporte."));
+                .body(ErrorResponseDTO.of(ex.getMessage()));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -46,13 +45,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessRuleViolationException.class)
     public ResponseEntity<ErrorResponseDTO> handleBusinessRule(BusinessRuleViolationException ex) {
-        return ResponseEntity.status(422)
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponseDTO.of(ex.getMessage()));
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponseDTO> handleRuntime(RuntimeException ex) {
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<ErrorResponseDTO> handleInvalidRequest(InvalidRequestException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponseDTO.of(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponseDTO> handleInvalidToken(InvalidTokenException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ErrorResponseDTO.of(ex.getMessage()));
     }
 

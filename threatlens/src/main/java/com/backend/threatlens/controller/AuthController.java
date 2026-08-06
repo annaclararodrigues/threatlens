@@ -4,6 +4,7 @@ import com.backend.threatlens.dto.request.*;
 import com.backend.threatlens.dto.response.AuthResponseDTO;
 import com.backend.threatlens.dto.response.AuthTokens;
 import com.backend.threatlens.dto.response.MessageResponseDTO;
+import com.backend.threatlens.exception.InvalidTokenException;
 import com.backend.threatlens.security.UserPrincipal;
 import com.backend.threatlens.service.AuthService;
 import com.backend.threatlens.utils.CookieUtil;
@@ -26,6 +27,7 @@ import java.util.Optional;
 public class AuthController {
 
     private final AuthService authService;
+    private final CookieUtil cookieUtil;
 
     @PostMapping("/register")
     public ResponseEntity<MessageResponseDTO> register(@Valid @RequestBody RegisterRequestDTO dto) {
@@ -38,8 +40,8 @@ public class AuthController {
     }
 
     @PostMapping("/resend-code")
-    public ResponseEntity<MessageResponseDTO> resendCode(@RequestParam String email) {
-        return ResponseEntity.ok(authService.resendCode(email));
+    public ResponseEntity<MessageResponseDTO> resendCode(@Valid @RequestBody EmailRequestDTO dto) {
+        return ResponseEntity.ok(authService.resendCode(dto.email()));
     }
 
     @PostMapping("/login")
@@ -50,7 +52,7 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponseDTO> refresh(HttpServletRequest request) {
         String refreshToken = extractRefreshTokenFromCookie(request)
-                .orElseThrow(() -> new RuntimeException("Refresh token não encontrado."));
+                .orElseThrow(() -> new InvalidTokenException("Refresh token não encontrado."));
         return buildAuthResponse(authService.refresh(refreshToken));
     }
 
@@ -58,14 +60,14 @@ public class AuthController {
     public ResponseEntity<MessageResponseDTO> logout(HttpServletRequest request) {
         extractRefreshTokenFromCookie(request).ifPresent(authService::logout);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, CookieUtil.clearAccessTokenCookie().toString())
-                .header(HttpHeaders.SET_COOKIE, CookieUtil.clearRefreshTokenCookie().toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.clearAccessTokenCookie().toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.clearRefreshTokenCookie().toString())
                 .body(new MessageResponseDTO("Logout realizado com sucesso."));
     }
 
     @PostMapping("/resend-password")
-    public ResponseEntity<MessageResponseDTO> resendPasswordCode(@RequestParam String email) {
-        return ResponseEntity.ok(authService.resendPasswordCode(email));
+    public ResponseEntity<MessageResponseDTO> resendPasswordCode(@Valid @RequestBody EmailRequestDTO dto) {
+        return ResponseEntity.ok(authService.resendPasswordCode(dto.email()));
     }
 
     @PostMapping("/forgot-password")
@@ -91,8 +93,8 @@ public class AuthController {
 
     private ResponseEntity<AuthResponseDTO> buildAuthResponse(AuthTokens tokens) {
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, CookieUtil.buildAccessTokenCookie(tokens.accessToken()).toString())
-                .header(HttpHeaders.SET_COOKIE, CookieUtil.buildRefreshTokenCookie(tokens.refreshToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildAccessTokenCookie(tokens.accessToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.buildRefreshTokenCookie(tokens.refreshToken()).toString())
                 .body(new AuthResponseDTO(tokens.username(), tokens.email(), tokens.role()));
     }
 
