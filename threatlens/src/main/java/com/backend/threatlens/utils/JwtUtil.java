@@ -11,11 +11,14 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
+    @Value("${jwt.expiration:300000}")
+    private long accessTokenExpirationMs;
+
     public String generateAccessToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new java.util.Date())
-                .setExpiration(new java.util.Date(System.currentTimeMillis() + 1 * 60 * 1000L)) // 15 minutos
+                .setExpiration(new java.util.Date(System.currentTimeMillis() + accessTokenExpirationMs))
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes()))
                 .compact();
     }
