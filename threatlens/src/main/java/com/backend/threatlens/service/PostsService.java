@@ -3,7 +3,9 @@ package com.backend.threatlens.service;
 import com.backend.threatlens.dto.request.PostsFilter;
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
+import com.backend.threatlens.dto.request.WordCloudQueryDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
+import com.backend.threatlens.dto.response.WordCloudDTO;
 import com.backend.threatlens.dto.response.posts.PostResponse;
 import com.backend.threatlens.dto.response.posts.PostsPageResponse;
 import com.backend.threatlens.enums.PostSource;
@@ -19,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +31,7 @@ import java.util.List;
 public class PostsService {
 
     private static final int MULTI_SOURCE_FETCH_CAP = 10_000;
+    private static final int MULTI_SOURCE_WORD_FETCH_CAP = 1_000;
 
     private final List<PostsSourceRepository> sources;
 
@@ -68,6 +73,31 @@ public class PostsService {
 
     private double calculateRelevancePct(long relevantCount, long totalPosts) {
         return totalPosts > 0 ? Math.round((relevantCount * 10000.0 / totalPosts)) / 100.0 : 0.0;
+    }
+
+    public WordCloudDTO getWordCloud(WordCloudQueryDTO query) {
+        List<PostsSourceRepository> selectedSources = filterSources(query.getSources());
+        TimeWindow window = resolveWindow(query.getPeriod(), query.getFrom(), query.getTo());
+        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to());
+
+        int perSourceFetchLimit = selectedSources.size() == 1
+                ? query.getLimit()
+                : Math.max(query.getLimit(), MULTI_SOURCE_WORD_FETCH_CAP);
+
+        Map<String, Long> wordCounts = new LinkedHashMap<>();
+        for (PostsSourceRepository repo : selectedSources) {
+            for (PostsSourceRepository.WordCount wordCount : repo.wordFrequencies(filter, perSourceFetchLimit)) {
+                wordCounts.merge(wordCount.word(), wordCount.count(), Long::sum);
+            }
+        }
+
+        List<WordCloudDTO.WordEntry> words = wordCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(query.getLimit())
+                .map(entry -> new WordCloudDTO.WordEntry(entry.getKey(), entry.getValue()))
+                .toList();
+
+        return new WordCloudDTO(words);
     }
 
     public PostsPageResponse getPosts(PostsQueryDTO query) {

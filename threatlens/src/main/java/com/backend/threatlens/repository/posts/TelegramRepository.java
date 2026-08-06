@@ -8,6 +8,7 @@ import com.backend.threatlens.enums.PostSource;
 import com.backend.threatlens.enums.RelevanceLevel;
 import com.backend.threatlens.enums.SortBy;
 import com.backend.threatlens.enums.SortOrder;
+import com.backend.threatlens.utils.StopWords;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -157,6 +158,41 @@ public class TelegramRepository implements PostsSourceRepository {
                 rs.getLong("medium_count"),
                 rs.getLong("high_count")
         ));
+    }
+
+    @Override
+    public List<WordCount> wordFrequencies(PostsFilter filter, int limit) {
+        String sql = """
+                SELECT word, COUNT(*) AS occurrences
+                FROM (
+                    SELECT regexp_split_to_table(
+                               lower(regexp_replace(m.message, '[^[:alpha:]\\s]', ' ', 'g')),
+                               '\\s+'
+                           ) AS word
+                    FROM telegram_message m
+                    LEFT JOIN telegram_classified_messages c ON c.id_post = m.id
+                    WHERE\s""" + RELEVANCE_FILTER + """
+                      AND (:category::text IS NULL OR c.content = :category)
+                      AND (:from::timestamp IS NULL OR m."createdAt" >= :from::timestamp)
+                      AND (:to::timestamp IS NULL OR m."createdAt" <= :to::timestamp)
+                ) words
+                WHERE length(word) > 2
+                  AND word NOT IN (:stopwords)
+                GROUP BY word
+                ORDER BY occurrences DESC
+                LIMIT :limit
+                """;
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("relevance", filter.relevance() != null ? filter.relevance().name() : null);
+        params.put("category", filter.category());
+        params.put("from", filter.from());
+        params.put("to", filter.to());
+        params.put("stopwords", List.copyOf(StopWords.ALL));
+        params.put("limit", limit);
+
+        return jdbcTemplate.query(sql, params, (rs, rowNum) ->
+                new WordCount(rs.getString("word"), rs.getLong("occurrences")));
     }
 
     private long queryCount(String sql, Map<String, Object> params) {
