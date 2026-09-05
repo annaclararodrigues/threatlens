@@ -148,12 +148,13 @@ public class PostsService {
     }
 
     private Comparator<PostResponse> comparator(SortBy sortBy, SortOrder sortOrder) {
-        Comparator<PostResponse> base;
-        if (sortBy == SortBy.SCORE) {
-            base = Comparator.comparingDouble(post -> post.classification() != null ? post.classification().score() : 0.0);
-        } else {
-            base = Comparator.comparing(PostResponse::createdAt, Comparator.nullsLast(Comparator.naturalOrder()));
-        }
+        Comparator<PostResponse> base = switch (sortBy) {
+            case SCORE -> Comparator.comparingDouble(post -> post.classification() != null ? post.classification().score() : 0.0);
+            case ID -> Comparator.comparing(PostResponse::id, Comparator.nullsLast(Comparator.naturalOrder()));
+            case SOURCE -> Comparator.comparing(post -> post.source().name());
+            case CONTENT -> Comparator.comparing(PostResponse::content, Comparator.nullsLast(Comparator.naturalOrder()));
+            case DATE -> Comparator.comparing(PostResponse::createdAt, Comparator.nullsLast(Comparator.naturalOrder()));
+        };
         return sortOrder == SortOrder.DESC ? base.reversed() : base;
     }
 

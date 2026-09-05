@@ -44,8 +44,13 @@ public class TelegramRepository implements PostsSourceRepository {
     @Override
     public List<PostResponse> findPage(PostsFilter filter, int offset, int limit, SortBy sortBy, SortOrder sortOrder) {
         String orderColumn = switch (sortBy) {
-            case SCORE -> "score";
-            case DATE  -> "created_at";
+            case SCORE   -> "score";
+            case DATE    -> "created_at";
+            case ID      -> "id";
+            case CONTENT -> "content";
+            // Só há uma fonte hoje (Telegram); ordenar por "fonte" não distingue nada,
+            // então cai de volta para "id" como critério estável.
+            case SOURCE  -> "id";
         };
         String orderDir = sortOrder == SortOrder.DESC ? "DESC" : "ASC";
 
