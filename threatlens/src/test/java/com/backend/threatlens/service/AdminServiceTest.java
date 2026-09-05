@@ -181,14 +181,29 @@ class AdminServiceTest {
         }
 
         @Test
-        void adminUser_throwsAdminDeletionNotAllowedException() {
+        void lastAdmin_throwsBusinessRuleViolationException() {
             UUID id = UUID.randomUUID();
             UserEntity admin = buildUser(id, "admin", "admin@test.com", Role.ADMIN, true);
             when(userRepository.findById(id)).thenReturn(Optional.of(admin));
+            when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
 
             assertThatThrownBy(() -> adminService.deleteUser(id))
                     .isInstanceOf(BusinessRuleViolationException.class)
-                    .hasMessage("Não é permitido remover um administrador.");
+                    .hasMessage("Não é permitido remover o último administrador.");
+        }
+
+        @Test
+        void adminNotLast_deletesUserAndCleansUpTokens() {
+            UUID id = UUID.randomUUID();
+            UserEntity admin = buildUser(id, "admin2", "admin2@test.com", Role.ADMIN, true);
+            when(userRepository.findById(id)).thenReturn(Optional.of(admin));
+            when(userRepository.countByRole(Role.ADMIN)).thenReturn(2L);
+
+            adminService.deleteUser(id);
+
+            verify(refreshTokenRepository).deleteByEmail("admin2@test.com");
+            verify(verificationCodeRepository).deleteByEmail("admin2@test.com");
+            verify(userRepository).delete(admin);
         }
 
         @Test
