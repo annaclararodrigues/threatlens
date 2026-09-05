@@ -204,12 +204,15 @@ class AuthServiceTest {
     }
 
     @Test
-    void forgotPassword_userNotFound_throwsException() {
+    void forgotPassword_userNotFound_returnsSameGenericMessageWithoutSendingEmail() {
         ForgotPasswordRequestDTO dto = new ForgotPasswordRequestDTO("user@test.com");
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.forgotPassword(dto))
-                .isInstanceOf(ResourceNotFoundException.class);
+        MessageResponseDTO result = authService.forgotPassword(dto);
+
+        assertThat(result.message()).contains("Se este e-mail estiver cadastrado");
+        verifyNoInteractions(emailService);
+        verify(verificationCodeRepository, org.mockito.Mockito.never()).save(any());
     }
 
     // --- resendPasswordCode ---
@@ -230,11 +233,14 @@ class AuthServiceTest {
     }
 
     @Test
-    void resendPasswordCode_userNotFound_throwsException() {
+    void resendPasswordCode_userNotFound_returnsSameGenericMessageWithoutSendingEmail() {
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.resendPasswordCode("user@test.com"))
-                .isInstanceOf(ResourceNotFoundException.class);
+        MessageResponseDTO result = authService.resendPasswordCode("user@test.com");
+
+        assertThat(result.message()).contains("Se este e-mail estiver cadastrado");
+        verifyNoInteractions(emailService);
+        verify(verificationCodeRepository, org.mockito.Mockito.never()).save(any());
     }
 
     // --- changePassword ---

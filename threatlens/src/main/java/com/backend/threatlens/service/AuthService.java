@@ -149,9 +149,19 @@ public class AuthService {
 
     @Transactional
     public MessageResponseDTO resendPasswordCode(String email) {
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Se este e-mail estiver cadastrado, você receberá um novo código."));
+        userRepository.findByEmail(email).ifPresent(user -> issueResetPasswordCode(email));
 
+        return new MessageResponseDTO("Se este e-mail estiver cadastrado, um novo código foi enviado.");
+    }
+
+    @Transactional
+    public MessageResponseDTO forgotPassword(ForgotPasswordRequestDTO dto) {
+        userRepository.findByEmail(dto.email()).ifPresent(user -> issueResetPasswordCode(dto.email()));
+
+        return new MessageResponseDTO("Se este e-mail estiver cadastrado, você receberá um código de redefinição.");
+    }
+
+    private void issueResetPasswordCode(String email) {
         verificationCodeRepository.deleteByEmailAndCodeType(email, CodeType.RESET_PASSWORD);
 
         String code = String.format("%04d", new Random().nextInt(10000));
@@ -165,31 +175,6 @@ public class AuthService {
 
         verificationCodeRepository.save(entity);
         emailService.sendVerificationCode(email, code);
-
-        return new MessageResponseDTO("Se este e-mail estiver cadastrado, um novo código foi enviado.");
-    }
-
-    @Transactional
-    public MessageResponseDTO forgotPassword(ForgotPasswordRequestDTO dto) {
-        userRepository.findByEmail(dto.email())
-                .orElseThrow(() -> new ResourceNotFoundException("Se este e-mail estiver cadastrado, você receberá um código."));
-
-        verificationCodeRepository.deleteByEmailAndCodeType(dto.email(), CodeType.RESET_PASSWORD);
-
-        String code = String.format("%04d", new Random().nextInt(10000));
-
-        VerificationCodeEntity entity = VerificationCodeEntity.builder()
-                .email(dto.email())
-                .codeType(CodeType.RESET_PASSWORD)
-                .code(code)
-                .expiresAt(LocalDateTime.now().plusMinutes(10))
-                .build();
-
-        verificationCodeRepository.save(entity);
-
-        emailService.sendVerificationCode(dto.email(), code);
-
-        return new MessageResponseDTO("Se este e-mail estiver cadastrado, você receberá um código de redefinição.");
     }
 
     @Transactional
