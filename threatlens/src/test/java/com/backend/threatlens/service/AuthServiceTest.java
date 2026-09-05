@@ -7,6 +7,7 @@ import com.backend.threatlens.entity.RefreshTokenEntity;
 import com.backend.threatlens.entity.UserEntity;
 import com.backend.threatlens.entity.VerificationCodeEntity;
 import com.backend.threatlens.enums.CodeType;
+import com.backend.threatlens.enums.Role;
 import com.backend.threatlens.exception.BusinessRuleViolationException;
 import com.backend.threatlens.exception.EmailNotVerifiedException;
 import com.backend.threatlens.exception.InvalidRequestException;
@@ -82,7 +83,7 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(null);
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
-        when(jwtUtil.generateAccessToken("user@test.com")).thenReturn("access-token");
+        when(jwtUtil.generateAccessToken("user@test.com", Role.USER)).thenReturn("access-token");
         when(refreshTokenService.createRefreshToken("user@test.com")).thenReturn("refresh-token");
 
         AuthTokens tokens = authService.login(dto);
@@ -117,7 +118,7 @@ class AuthServiceTest {
         when(verificationCodeRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        when(jwtUtil.generateAccessToken("user@test.com")).thenReturn("access-token");
+        when(jwtUtil.generateAccessToken("user@test.com", Role.USER)).thenReturn("access-token");
         when(refreshTokenService.createRefreshToken("user@test.com")).thenReturn("refresh-token");
 
         AuthTokens tokens = authService.verifyCode(dto);
@@ -337,7 +338,7 @@ class AuthServiceTest {
 
         when(refreshTokenService.validate("refresh-token")).thenReturn(entity);
         doNothing().when(refreshTokenService).revoke("refresh-token");
-        when(jwtUtil.generateAccessToken("user@test.com")).thenReturn("new-access-token");
+        when(jwtUtil.generateAccessToken("user@test.com", Role.USER)).thenReturn("new-access-token");
         when(refreshTokenService.createRefreshToken("user@test.com")).thenReturn("new-refresh-token");
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
 

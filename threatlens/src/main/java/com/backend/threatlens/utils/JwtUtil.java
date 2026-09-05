@@ -1,5 +1,6 @@
 package com.backend.threatlens.utils;
 
+import com.backend.threatlens.enums.Role;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,9 +15,10 @@ public class JwtUtil {
     @Value("${jwt.expiration:300000}")
     private long accessTokenExpirationMs;
 
-    public String generateAccessToken(String email) {
+    public String generateAccessToken(String email, Role role) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("role", role.name())
                 .setIssuedAt(new java.util.Date())
                 .setExpiration(new java.util.Date(System.currentTimeMillis() + accessTokenExpirationMs))
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes()))
@@ -39,6 +41,16 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    public Role extractRole(String token) {
+        String role = Jwts.parserBuilder()
+                .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
+        return role != null ? Role.valueOf(role) : null;
     }
 
     public boolean isValidToken(String token) {

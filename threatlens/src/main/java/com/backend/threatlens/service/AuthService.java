@@ -84,7 +84,7 @@ public class AuthService {
             userRepository.save(user);
         }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole());
         String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
         return new AuthTokens(accessToken, refreshToken, user.getUsername(), user.getEmail(), user.getRole());
@@ -109,7 +109,7 @@ public class AuthService {
             throw new EmailNotVerifiedException("E-mail não verificado. Verifique sua caixa de entrada.");
         }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole());
         String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
         audit("LOGIN_SUCCESS", user.getEmail());
@@ -227,11 +227,11 @@ public class AuthService {
 
         refreshTokenService.revoke(refreshToken);
 
-        String accessToken = jwtUtil.generateAccessToken(entity.getEmail());
-        String newRefreshToken = refreshTokenService.createRefreshToken(entity.getEmail());
-
         UserEntity user = userRepository.findByEmail(entity.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole());
+        String newRefreshToken = refreshTokenService.createRefreshToken(entity.getEmail());
 
         audit("TOKEN_REFRESH", user.getEmail());
 
