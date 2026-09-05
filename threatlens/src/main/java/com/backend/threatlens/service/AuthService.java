@@ -217,8 +217,9 @@ public class AuthService {
     @Transactional
     public void logout(String refreshToken) {
         if (refreshToken != null && !refreshToken.isBlank()) {
+            String email = refreshTokenService.findEmailByToken(refreshToken).orElse(null);
             refreshTokenService.revoke(refreshToken);
-            audit("LOGOUT", null);
+            audit("LOGOUT", email);
         }
     }
 
