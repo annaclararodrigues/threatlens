@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +17,10 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
+
+    public Optional<String> findEmailByToken(String token) {
+        return refreshTokenRepository.findByToken(token).map(RefreshTokenEntity::getEmail);
+    }
 
     @Transactional
     public String createRefreshToken(String email) {

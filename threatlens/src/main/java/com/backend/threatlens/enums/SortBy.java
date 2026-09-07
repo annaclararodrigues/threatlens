@@ -1,5 +1,5 @@
 package com.backend.threatlens.enums;
 
 public enum SortBy {
-    DATE, SCORE
+    DATE, SCORE, ID, SOURCE, CONTENT
 }

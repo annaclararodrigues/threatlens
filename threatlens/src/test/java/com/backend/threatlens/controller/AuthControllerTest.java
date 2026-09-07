@@ -99,7 +99,7 @@ class AuthControllerTest {
 
         @Test
         void validCredentials_returns200WithCookies() throws Exception {
-            when(authService.login(any())).thenReturn(new AuthTokens("access-tok", "refresh-tok", "anna", "anna@test.com"));
+            when(authService.login(any())).thenReturn(new AuthTokens("access-tok", "refresh-tok", "anna", "anna@test.com", Role.USER));
 
             mockMvc.perform(post("/auth/login")
                             .contentType("application/json")

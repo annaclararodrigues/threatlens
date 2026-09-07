@@ -1,6 +1,8 @@
 package com.backend.threatlens.filter;
 
-import com.backend.threatlens.service.UserDetailsServiceImpl;
+import com.backend.threatlens.entity.UserEntity;
+import com.backend.threatlens.enums.Role;
+import com.backend.threatlens.security.UserPrincipal;
 import com.backend.threatlens.utils.CookieUtil;
 import com.backend.threatlens.utils.JwtUtil;
 import jakarta.servlet.FilterChain;
@@ -11,19 +13,22 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
 
+/**
+ * Autentica exclusivamente a partir das claims do JWT (email + role), sem consultar o banco a
+ * cada requisição. A checagem de credenciais contra o banco só acontece no login, via
+ * {@code UserDetailsServiceImpl} usado pelo {@code AuthenticationManager}.
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserDetailsServiceImpl userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -34,10 +39,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         if (token != null && jwtUtil.isValidToken(token)) {
             String email = jwtUtil.extractEmail(token);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            Role extractedRole = jwtUtil.extractRole(token);
+            UserEntity stub = UserEntity.builder()
+                    .email(email)
+                    .role(extractedRole != null ? extractedRole : Role.USER)
+                    .build();
+            UserPrincipal principal = new UserPrincipal(stub);
             UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities()
+                            principal, null, principal.getAuthorities()
                     );
             SecurityContextHolder.getContext().setAuthentication(auth);
         }

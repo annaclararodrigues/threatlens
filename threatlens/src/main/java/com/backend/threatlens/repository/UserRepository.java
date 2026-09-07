@@ -17,6 +17,10 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByEmail(String email);
 
+    boolean existsByRole(Role role);
+
+    long countByRole(Role role);
+
     @Query("""
             SELECT user FROM UserEntity user
             WHERE (:role IS NULL OR user.role = :role)
