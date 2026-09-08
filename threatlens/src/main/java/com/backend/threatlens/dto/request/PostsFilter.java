@@ -8,5 +8,6 @@ public record PostsFilter(
         RelevanceLevel relevance,
         String category,
         LocalDateTime from,
-        LocalDateTime to
+        LocalDateTime to,
+        String search
 ) {}
