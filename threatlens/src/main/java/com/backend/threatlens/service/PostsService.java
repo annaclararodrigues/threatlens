@@ -38,7 +38,7 @@ public class PostsService {
     public PostStatsDTO getStats(StatsQueryDTO query) {
         List<PostsSourceRepository> selectedSources = filterSources(query.getSources());
         TimeWindow window = resolveWindow(query.getPeriod(), query.getFrom(), query.getTo());
-        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to());
+        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to(), null);
 
         CombinedStats combinedStats = combineSourceStats(selectedSources, filter);
         double relevantPct = calculateRelevancePct(combinedStats.relevantCount(), combinedStats.totalPosts());
@@ -78,7 +78,7 @@ public class PostsService {
     public WordCloudDTO getWordCloud(WordCloudQueryDTO query) {
         List<PostsSourceRepository> selectedSources = filterSources(query.getSources());
         TimeWindow window = resolveWindow(query.getPeriod(), query.getFrom(), query.getTo());
-        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to());
+        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to(), null);
 
         int perSourceFetchLimit = selectedSources.size() == 1
                 ? query.getLimit()
@@ -103,7 +103,7 @@ public class PostsService {
     public PostsPageResponse getPosts(PostsQueryDTO query) {
         List<PostsSourceRepository> selectedSources = filterSources(query.getSources());
         TimeWindow window = resolveWindow(query.getPeriod(), query.getFrom(), query.getTo());
-        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to());
+        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to(), query.getSearch());
         int offset = query.getPage() * query.getSize();
 
         if (selectedSources.size() == 1) {

@@ -21,6 +21,7 @@ public class PostsQueryDTO {
     private List<PostSource> sources;
     private RelevanceLevel relevance;
     private String category;
+    private String search;
     private StatsPeriod period = StatsPeriod.ALL;
     private SortBy sort = SortBy.DATE;
     private SortOrder order = SortOrder.DESC;
