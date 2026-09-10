@@ -24,7 +24,7 @@ Este repositório contém apenas o back-end (Java + Spring Boot). Ele expõe uma
 - **Posts** — listagem paginada de postagens coletadas de fontes externas (hoje, Telegram), com filtros por fonte, nível de relevância, categoria e período (dia, semana, mês, ano, tudo ou intervalo customizado), e ordenação por data, score, id, fonte ou conteúdo.
 - **Estatísticas** — endpoint agregado com total de posts, percentual de posts relevantes no período e distribuição por nível de relevância, usado para alimentar dashboards.
 - **Nuvem de palavras** — termos mais frequentes nos posts, calculados via SQL (sem sobrecarregar a aplicação), com stopwords em português e inglês.
-- **Painel de Administração** — restrito a usuários com role `ADMIN`: listagem paginada de usuários com busca textual e filtro por role, exclusão de contas (bloqueada apenas quando o alvo é o último administrador restante).
+- **Painel de Administração** — restrito a usuários com role `ADMIN`: listagem paginada de usuários com busca textual e filtro por role, alteração de role de um usuário e exclusão de contas (ambas bloqueadas quando o alvo é o último administrador restante).
 - **Bootstrap automático do primeiro administrador** — se nenhum usuário `ADMIN` existir, a aplicação cria um a partir de variáveis de ambiente na subida, sem precisar de um endpoint público de criação de admin.
 - **Rate limiting** — limite de tentativas por IP nos endpoints sensíveis de autenticação (login, cadastro, verificação de código).
 - **Auditoria** — eventos de autenticação (login, logout, registro, troca de senha, renovação de sessão) registrados em um logger dedicado, com e-mail, IP e timestamp.
@@ -67,7 +67,6 @@ threatlens/
 │   │       ├── db/migration/   # Migrations Flyway (V1, V2, ...)
 │   │       └── application*.properties
 │   └── test/                   # Testes unitários e de controller (JUnit 5 + Mockito + MockMvc)
-├── docs/                       # Documentação de comportamento da API
 ├── pom.xml
 └── mvnw / mvnw.cmd
 ```
@@ -157,8 +156,6 @@ A autenticação é baseada em JWT + cookies HTTP-only, gerenciados inteiramente
 - `POST /auth/logout` revoga o refresh token atual e limpa os cookies — sempre retorna 200, mesmo sem uma sessão válida.
 - Endpoints sensíveis (`/auth/login`, `/auth/register`, `/auth/verify`) têm limite de tentativas por IP (`RateLimitFilter`).
 - O acesso a `/admin/**` é controlado por `@PreAuthorize("hasRole('ADMIN')")`.
-
-Documentação detalhada de comportamento, contratos e códigos de erro de cada endpoint está em [`docs/api-auth-admin.md`](threatlens/docs/api-auth-admin.md) e [`auth_documentation.md`](threatlens/auth_documentation.md).
 
 ## Testes e Padrões de Código
 
