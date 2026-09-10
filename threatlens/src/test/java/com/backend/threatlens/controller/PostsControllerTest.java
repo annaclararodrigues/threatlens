@@ -471,14 +471,14 @@ class PostsControllerTest {
         class ErrorHandling {
 
             @Test
-            void serviceThrowsBusinessRuleViolation_returns422WithMessage() throws Exception {
+            void serviceThrowsBusinessRuleViolation_returns409WithMessage() throws Exception {
                 when(postsService.getWordCloud(any()))
                         .thenThrow(new BusinessRuleViolationException("'from' can not be after 'to'"));
 
                 mockMvc.perform(get("/posts/wordcloud")
                                 .param("from", "2024-02-01T00:00:00")
                                 .param("to",   "2024-01-01T00:00:00"))
-                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(status().isConflict())
                         .andExpect(jsonPath("$.message").value("'from' can not be after 'to'"));
             }
 

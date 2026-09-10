@@ -44,8 +44,13 @@ public class TelegramRepository implements PostsSourceRepository {
     @Override
     public List<PostResponse> findPage(PostsFilter filter, int offset, int limit, SortBy sortBy, SortOrder sortOrder) {
         String orderColumn = switch (sortBy) {
-            case SCORE -> "score";
-            case DATE  -> "created_at";
+            case SCORE   -> "score";
+            case DATE    -> "created_at";
+            case ID      -> "id";
+            case CONTENT -> "content";
+            // Só há uma fonte hoje (Telegram); ordenar por "fonte" não distingue nada,
+            // então cai de volta para "id" como critério estável.
+            case SOURCE  -> "id";
         };
         String orderDir = sortOrder == SortOrder.DESC ? "DESC" : "ASC";
 
@@ -67,6 +72,7 @@ public class TelegramRepository implements PostsSourceRepository {
                 LEFT JOIN telegram_classified_messages c ON c.id_post = m.id
                 WHERE\s""" + RELEVANCE_FILTER + """
                   AND (:category::text IS NULL OR c.content = :category)
+                  AND (:search::text IS NULL OR m.message ILIKE '%' || :search || '%')
                   AND (:from::timestamp IS NULL OR m."createdAt" >= :from::timestamp)
                   AND (:to::timestamp IS NULL OR m."createdAt" <= :to::timestamp)
                 ORDER BY\s""" + orderColumn + " " + orderDir + " NULLS LAST" + """
@@ -76,6 +82,7 @@ public class TelegramRepository implements PostsSourceRepository {
         Map<String, Object> params = new HashMap<>();
         params.put("relevance", filter.relevance() != null ? filter.relevance().name() : null);
         params.put("category", filter.category());
+        params.put("search", filter.search());
         params.put("from", filter.from());
         params.put("to", filter.to());
         params.put("limit", limit);
@@ -114,6 +121,7 @@ public class TelegramRepository implements PostsSourceRepository {
                 LEFT JOIN telegram_classified_messages c ON c.id_post = m.id
                 WHERE\s""" + RELEVANCE_FILTER + """
                   AND (:category::text IS NULL OR c.content = :category)
+                  AND (:search::text IS NULL OR m.message ILIKE '%' || :search || '%')
                   AND (:from::timestamp IS NULL OR m."createdAt" >= :from::timestamp)
                   AND (:to::timestamp IS NULL OR m."createdAt" <= :to::timestamp)
                 """;
@@ -121,6 +129,7 @@ public class TelegramRepository implements PostsSourceRepository {
         Map<String, Object> params = new HashMap<>();
         params.put("relevance", filter.relevance() != null ? filter.relevance().name() : null);
         params.put("category", filter.category());
+        params.put("search", filter.search());
         params.put("from", filter.from());
         params.put("to", filter.to());
 

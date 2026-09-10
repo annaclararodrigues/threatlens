@@ -84,7 +84,7 @@ public class AuthService {
             userRepository.save(user);
         }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole());
         String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
         return new AuthTokens(accessToken, refreshToken, user.getUsername(), user.getEmail(), user.getRole());
@@ -109,7 +109,7 @@ public class AuthService {
             throw new EmailNotVerifiedException("E-mail não verificado. Verifique sua caixa de entrada.");
         }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole());
         String refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
 
         audit("LOGIN_SUCCESS", user.getEmail());
@@ -149,9 +149,19 @@ public class AuthService {
 
     @Transactional
     public MessageResponseDTO resendPasswordCode(String email) {
-        userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Se este e-mail estiver cadastrado, você receberá um novo código."));
+        userRepository.findByEmail(email).ifPresent(user -> issueResetPasswordCode(email));
 
+        return new MessageResponseDTO("Se este e-mail estiver cadastrado, um novo código foi enviado.");
+    }
+
+    @Transactional
+    public MessageResponseDTO forgotPassword(ForgotPasswordRequestDTO dto) {
+        userRepository.findByEmail(dto.email()).ifPresent(user -> issueResetPasswordCode(dto.email()));
+
+        return new MessageResponseDTO("Se este e-mail estiver cadastrado, você receberá um código de redefinição.");
+    }
+
+    private void issueResetPasswordCode(String email) {
         verificationCodeRepository.deleteByEmailAndCodeType(email, CodeType.RESET_PASSWORD);
 
         String code = String.format("%04d", new Random().nextInt(10000));
@@ -165,31 +175,6 @@ public class AuthService {
 
         verificationCodeRepository.save(entity);
         emailService.sendVerificationCode(email, code);
-
-        return new MessageResponseDTO("Se este e-mail estiver cadastrado, um novo código foi enviado.");
-    }
-
-    @Transactional
-    public MessageResponseDTO forgotPassword(ForgotPasswordRequestDTO dto) {
-        userRepository.findByEmail(dto.email())
-                .orElseThrow(() -> new ResourceNotFoundException("Se este e-mail estiver cadastrado, você receberá um código."));
-
-        verificationCodeRepository.deleteByEmailAndCodeType(dto.email(), CodeType.RESET_PASSWORD);
-
-        String code = String.format("%04d", new Random().nextInt(10000));
-
-        VerificationCodeEntity entity = VerificationCodeEntity.builder()
-                .email(dto.email())
-                .codeType(CodeType.RESET_PASSWORD)
-                .code(code)
-                .expiresAt(LocalDateTime.now().plusMinutes(10))
-                .build();
-
-        verificationCodeRepository.save(entity);
-
-        emailService.sendVerificationCode(dto.email(), code);
-
-        return new MessageResponseDTO("Se este e-mail estiver cadastrado, você receberá um código de redefinição.");
     }
 
     @Transactional
@@ -232,8 +217,9 @@ public class AuthService {
     @Transactional
     public void logout(String refreshToken) {
         if (refreshToken != null && !refreshToken.isBlank()) {
+            String email = refreshTokenService.findEmailByToken(refreshToken).orElse(null);
             refreshTokenService.revoke(refreshToken);
-            audit("LOGOUT", null);
+            audit("LOGOUT", email);
         }
     }
 
@@ -242,11 +228,11 @@ public class AuthService {
 
         refreshTokenService.revoke(refreshToken);
 
-        String accessToken = jwtUtil.generateAccessToken(entity.getEmail());
-        String newRefreshToken = refreshTokenService.createRefreshToken(entity.getEmail());
-
         UserEntity user = userRepository.findByEmail(entity.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole());
+        String newRefreshToken = refreshTokenService.createRefreshToken(entity.getEmail());
 
         audit("TOKEN_REFRESH", user.getEmail());
 

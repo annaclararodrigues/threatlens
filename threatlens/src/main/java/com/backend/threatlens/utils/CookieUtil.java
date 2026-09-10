@@ -44,7 +44,7 @@ public class CookieUtil {
                 .httpOnly(true)
                 .secure(secureCookie)
                 .sameSite("Strict")
-                .path("/")
+                .path("/auth")
                 .maxAge(Duration.ofDays(7))
                 .build();
     }
@@ -54,7 +54,7 @@ public class CookieUtil {
                 .httpOnly(true)
                 .secure(secureCookie)
                 .sameSite("Strict")
-                .path("/")
+                .path("/auth")
                 .maxAge(0)
                 .build();
     }
