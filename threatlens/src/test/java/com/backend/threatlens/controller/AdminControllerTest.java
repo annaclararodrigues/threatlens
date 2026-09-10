@@ -173,6 +173,17 @@ class AdminControllerTest {
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.message").value("Não é permitido remover o último administrador."));
         }
+
+        @Test
+        void adminNotLast_returns204() throws Exception {
+            UUID id = UUID.randomUUID();
+            doNothing().when(adminService).deleteUser(id);
+
+            mockMvc.perform(delete("/admin/users/{id}", id))
+                    .andExpect(status().isNoContent());
+
+            verify(adminService).deleteUser(id);
+        }
     }
 
     @Nested

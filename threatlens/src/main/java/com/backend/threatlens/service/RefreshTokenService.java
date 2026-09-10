@@ -1,6 +1,7 @@
 package com.backend.threatlens.service;
 
 import com.backend.threatlens.entity.RefreshTokenEntity;
+import com.backend.threatlens.exception.InvalidTokenException;
 import com.backend.threatlens.repository.RefreshTokenRepository;
 import com.backend.threatlens.utils.JwtUtil;
 import jakarta.transaction.Transactional;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -15,6 +17,10 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
+
+    public Optional<String> findEmailByToken(String token) {
+        return refreshTokenRepository.findByToken(token).map(RefreshTokenEntity::getEmail);
+    }
 
     @Transactional
     public String createRefreshToken(String email) {
@@ -32,12 +38,12 @@ public class RefreshTokenService {
 
     public RefreshTokenEntity validate(String token) {
         if (!jwtUtil.isValidToken(token)) {
-            throw new RuntimeException("Refresh token inválido ou expirado.");
+            throw new InvalidTokenException("Refresh token inválido ou expirado.");
         }
 
         RefreshTokenEntity entity = refreshTokenRepository
                 .findByTokenAndIsRevokedFalse(token)
-                .orElseThrow(() -> new RuntimeException("Refresh token revogado ou não encontrado."));
+                .orElseThrow(() -> new InvalidTokenException("Refresh token revogado ou não encontrado."));
 
         return entity;
     }

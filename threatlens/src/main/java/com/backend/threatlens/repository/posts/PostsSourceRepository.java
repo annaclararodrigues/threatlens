@@ -18,5 +18,9 @@ public interface PostsSourceRepository {
 
     SourceStats getStats(PostsFilter filter);
 
+    List<WordCount> wordFrequencies(PostsFilter filter, int limit);
+
     record SourceStats(long totalPosts, long relevantCount, long lowCount, long mediumCount, long highCount) {}
+
+    record WordCount(String word, long count) {}
 }

@@ -7,6 +7,11 @@ import com.backend.threatlens.entity.RefreshTokenEntity;
 import com.backend.threatlens.entity.UserEntity;
 import com.backend.threatlens.entity.VerificationCodeEntity;
 import com.backend.threatlens.enums.CodeType;
+import com.backend.threatlens.enums.Role;
+import com.backend.threatlens.exception.BusinessRuleViolationException;
+import com.backend.threatlens.exception.EmailNotVerifiedException;
+import com.backend.threatlens.exception.InvalidRequestException;
+import com.backend.threatlens.exception.ResourceNotFoundException;
 import com.backend.threatlens.repository.UserRepository;
 import com.backend.threatlens.repository.VerificationCodeRepository;
 import com.backend.threatlens.utils.JwtUtil;
@@ -65,7 +70,7 @@ class AuthServiceTest {
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(buildUser(true)));
 
         assertThatThrownBy(() -> authService.register(dto))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("Email already in use");
     }
 
@@ -78,7 +83,7 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(null);
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
-        when(jwtUtil.generateAccessToken("user@test.com")).thenReturn("access-token");
+        when(jwtUtil.generateAccessToken("user@test.com", Role.USER)).thenReturn("access-token");
         when(refreshTokenService.createRefreshToken("user@test.com")).thenReturn("refresh-token");
 
         AuthTokens tokens = authService.login(dto);
@@ -96,7 +101,7 @@ class AuthServiceTest {
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(buildUser(false)));
 
         assertThatThrownBy(() -> authService.login(dto))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(EmailNotVerifiedException.class)
                 .hasMessageContaining("E-mail não verificado");
     }
 
@@ -113,7 +118,7 @@ class AuthServiceTest {
         when(verificationCodeRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        when(jwtUtil.generateAccessToken("user@test.com")).thenReturn("access-token");
+        when(jwtUtil.generateAccessToken("user@test.com", Role.USER)).thenReturn("access-token");
         when(refreshTokenService.createRefreshToken("user@test.com")).thenReturn("refresh-token");
 
         AuthTokens tokens = authService.verifyCode(dto);
@@ -129,7 +134,7 @@ class AuthServiceTest {
                 "user@test.com", "0000", CodeType.REGISTER)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.verifyCode(dto))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("Código inválido");
     }
 
@@ -141,8 +146,102 @@ class AuthServiceTest {
                 "user@test.com", "1234", CodeType.REGISTER)).thenReturn(Optional.of(code));
 
         assertThatThrownBy(() -> authService.verifyCode(dto))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("Código expirado");
+    }
+
+    // --- resendCode ---
+
+    @Test
+    void resendCode_success() {
+        UserEntity user = buildUser(false);
+        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+        doNothing().when(verificationCodeRepository).deleteByEmailAndCodeType("user@test.com", CodeType.REGISTER);
+        when(verificationCodeRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        doNothing().when(emailService).sendVerificationCode(any(), any());
+
+        MessageResponseDTO result = authService.resendCode("user@test.com");
+
+        assertThat(result.message()).contains("user@test.com");
+        verify(verificationCodeRepository).save(any(VerificationCodeEntity.class));
+        verify(emailService).sendVerificationCode(eq("user@test.com"), any());
+    }
+
+    @Test
+    void resendCode_userNotFound_throwsException() {
+        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.resendCode("user@test.com"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Usuário não encontrado");
+    }
+
+    @Test
+    void resendCode_emailAlreadyVerified_throwsException() {
+        UserEntity user = buildUser(true);
+        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.resendCode("user@test.com"))
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessageContaining("E-mail já verificado");
+    }
+
+    // --- forgotPassword ---
+
+    @Test
+    void forgotPassword_success() {
+        ForgotPasswordRequestDTO dto = new ForgotPasswordRequestDTO("user@test.com");
+        UserEntity user = buildUser(true);
+        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+        doNothing().when(verificationCodeRepository).deleteByEmailAndCodeType("user@test.com", CodeType.RESET_PASSWORD);
+        when(verificationCodeRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        doNothing().when(emailService).sendVerificationCode(any(), any());
+
+        MessageResponseDTO result = authService.forgotPassword(dto);
+
+        assertThat(result.message()).contains("redefinição");
+        verify(verificationCodeRepository).save(any(VerificationCodeEntity.class));
+        verify(emailService).sendVerificationCode(eq("user@test.com"), any());
+    }
+
+    @Test
+    void forgotPassword_userNotFound_returnsSameGenericMessageWithoutSendingEmail() {
+        ForgotPasswordRequestDTO dto = new ForgotPasswordRequestDTO("user@test.com");
+        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.empty());
+
+        MessageResponseDTO result = authService.forgotPassword(dto);
+
+        assertThat(result.message()).contains("Se este e-mail estiver cadastrado");
+        verifyNoInteractions(emailService);
+        verify(verificationCodeRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    // --- resendPasswordCode ---
+
+    @Test
+    void resendPasswordCode_success() {
+        UserEntity user = buildUser(true);
+        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+        doNothing().when(verificationCodeRepository).deleteByEmailAndCodeType("user@test.com", CodeType.RESET_PASSWORD);
+        when(verificationCodeRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        doNothing().when(emailService).sendVerificationCode(any(), any());
+
+        MessageResponseDTO result = authService.resendPasswordCode("user@test.com");
+
+        assertThat(result.message()).contains("novo código foi enviado");
+        verify(verificationCodeRepository).save(any(VerificationCodeEntity.class));
+        verify(emailService).sendVerificationCode(eq("user@test.com"), any());
+    }
+
+    @Test
+    void resendPasswordCode_userNotFound_returnsSameGenericMessageWithoutSendingEmail() {
+        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.empty());
+
+        MessageResponseDTO result = authService.resendPasswordCode("user@test.com");
+
+        assertThat(result.message()).contains("Se este e-mail estiver cadastrado");
+        verifyNoInteractions(emailService);
+        verify(verificationCodeRepository, org.mockito.Mockito.never()).save(any());
     }
 
     // --- changePassword ---
@@ -167,7 +266,7 @@ class AuthServiceTest {
         ChangePasswordRequestDTO dto = new ChangePasswordRequestDTO("OldPass1!", "NewPass1!", "Different1!");
 
         assertThatThrownBy(() -> authService.changePassword(dto, "user@test.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(InvalidRequestException.class)
                 .hasMessageContaining("senhas não coincidem");
     }
 
@@ -179,7 +278,7 @@ class AuthServiceTest {
         when(passwordEncoder.matches("WrongPass!", "hashed-password")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.changePassword(dto, "user@test.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("Senha atual incorreta");
     }
 
@@ -204,7 +303,7 @@ class AuthServiceTest {
         ResetPasswordRequestDTO dto = new ResetPasswordRequestDTO("NewPass1!", "Different1!");
 
         assertThatThrownBy(() -> authService.resetPassword(dto, "user@test.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(InvalidRequestException.class)
                 .hasMessageContaining("senhas não coincidem");
     }
 
@@ -239,7 +338,7 @@ class AuthServiceTest {
 
         when(refreshTokenService.validate("refresh-token")).thenReturn(entity);
         doNothing().when(refreshTokenService).revoke("refresh-token");
-        when(jwtUtil.generateAccessToken("user@test.com")).thenReturn("new-access-token");
+        when(jwtUtil.generateAccessToken("user@test.com", Role.USER)).thenReturn("new-access-token");
         when(refreshTokenService.createRefreshToken("user@test.com")).thenReturn("new-refresh-token");
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
 

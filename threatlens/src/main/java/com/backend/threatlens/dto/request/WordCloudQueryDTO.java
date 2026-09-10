@@ -2,8 +2,6 @@ package com.backend.threatlens.dto.request;
 
 import com.backend.threatlens.enums.PostSource;
 import com.backend.threatlens.enums.RelevanceLevel;
-import com.backend.threatlens.enums.SortBy;
-import com.backend.threatlens.enums.SortOrder;
 import com.backend.threatlens.enums.StatsPeriod;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -16,15 +14,12 @@ import java.util.List;
 
 @Getter
 @Setter
-public class PostsQueryDTO {
+public class WordCloudQueryDTO {
 
     private List<PostSource> sources;
     private RelevanceLevel relevance;
     private String category;
-    private String search;
     private StatsPeriod period = StatsPeriod.ALL;
-    private SortBy sort = SortBy.DATE;
-    private SortOrder order = SortOrder.DESC;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime from;
@@ -32,10 +27,7 @@ public class PostsQueryDTO {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime to;
 
-    @Min(0)
-    private int page = 0;
-
     @Min(1)
-    @Max(100)
-    private int size = 20;
+    @Max(200)
+    private int limit = 50;
 }

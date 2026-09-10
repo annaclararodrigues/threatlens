@@ -3,7 +3,9 @@ package com.backend.threatlens.service;
 import com.backend.threatlens.dto.request.PostsFilter;
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
+import com.backend.threatlens.dto.request.WordCloudQueryDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
+import com.backend.threatlens.dto.response.WordCloudDTO;
 import com.backend.threatlens.dto.response.posts.PostResponse;
 import com.backend.threatlens.dto.response.posts.PostsPageResponse;
 import com.backend.threatlens.enums.PostSource;
@@ -19,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -27,13 +31,14 @@ import java.util.List;
 public class PostsService {
 
     private static final int MULTI_SOURCE_FETCH_CAP = 10_000;
+    private static final int MULTI_SOURCE_WORD_FETCH_CAP = 1_000;
 
     private final List<PostsSourceRepository> sources;
 
     public PostStatsDTO getStats(StatsQueryDTO query) {
         List<PostsSourceRepository> selectedSources = filterSources(query.getSources());
         TimeWindow window = resolveWindow(query.getPeriod(), query.getFrom(), query.getTo());
-        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to());
+        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to(), null);
 
         CombinedStats combinedStats = combineSourceStats(selectedSources, filter);
         double relevantPct = calculateRelevancePct(combinedStats.relevantCount(), combinedStats.totalPosts());
@@ -70,10 +75,35 @@ public class PostsService {
         return totalPosts > 0 ? Math.round((relevantCount * 10000.0 / totalPosts)) / 100.0 : 0.0;
     }
 
+    public WordCloudDTO getWordCloud(WordCloudQueryDTO query) {
+        List<PostsSourceRepository> selectedSources = filterSources(query.getSources());
+        TimeWindow window = resolveWindow(query.getPeriod(), query.getFrom(), query.getTo());
+        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to(), null);
+
+        int perSourceFetchLimit = selectedSources.size() == 1
+                ? query.getLimit()
+                : Math.max(query.getLimit(), MULTI_SOURCE_WORD_FETCH_CAP);
+
+        Map<String, Long> wordCounts = new LinkedHashMap<>();
+        for (PostsSourceRepository repo : selectedSources) {
+            for (PostsSourceRepository.WordCount wordCount : repo.wordFrequencies(filter, perSourceFetchLimit)) {
+                wordCounts.merge(wordCount.word(), wordCount.count(), Long::sum);
+            }
+        }
+
+        List<WordCloudDTO.WordEntry> words = wordCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(query.getLimit())
+                .map(entry -> new WordCloudDTO.WordEntry(entry.getKey(), entry.getValue()))
+                .toList();
+
+        return new WordCloudDTO(words);
+    }
+
     public PostsPageResponse getPosts(PostsQueryDTO query) {
         List<PostsSourceRepository> selectedSources = filterSources(query.getSources());
         TimeWindow window = resolveWindow(query.getPeriod(), query.getFrom(), query.getTo());
-        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to());
+        PostsFilter filter = new PostsFilter(query.getRelevance(), query.getCategory(), window.from(), window.to(), query.getSearch());
         int offset = query.getPage() * query.getSize();
 
         if (selectedSources.size() == 1) {
@@ -118,12 +148,13 @@ public class PostsService {
     }
 
     private Comparator<PostResponse> comparator(SortBy sortBy, SortOrder sortOrder) {
-        Comparator<PostResponse> base;
-        if (sortBy == SortBy.SCORE) {
-            base = Comparator.comparingDouble(post -> post.classification() != null ? post.classification().score() : 0.0);
-        } else {
-            base = Comparator.comparing(PostResponse::createdAt, Comparator.nullsLast(Comparator.naturalOrder()));
-        }
+        Comparator<PostResponse> base = switch (sortBy) {
+            case SCORE -> Comparator.comparingDouble(post -> post.classification() != null ? post.classification().score() : 0.0);
+            case ID -> Comparator.comparing(PostResponse::id, Comparator.nullsLast(Comparator.naturalOrder()));
+            case SOURCE -> Comparator.comparing(post -> post.source().name());
+            case CONTENT -> Comparator.comparing(PostResponse::content, Comparator.nullsLast(Comparator.naturalOrder()));
+            case DATE -> Comparator.comparing(PostResponse::createdAt, Comparator.nullsLast(Comparator.naturalOrder()));
+        };
         return sortOrder == SortOrder.DESC ? base.reversed() : base;
     }
 

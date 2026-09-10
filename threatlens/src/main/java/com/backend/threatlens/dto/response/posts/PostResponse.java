@@ -1,6 +1,5 @@
 package com.backend.threatlens.dto.response.posts;
 
-import com.backend.threatlens.dto.response.ClassificationResponse;
 import com.backend.threatlens.enums.PostSource;
 import com.fasterxml.jackson.annotation.JsonFormat;
 

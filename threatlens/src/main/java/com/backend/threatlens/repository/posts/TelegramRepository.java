@@ -1,13 +1,14 @@
 package com.backend.threatlens.repository.posts;
 
 import com.backend.threatlens.dto.request.PostsFilter;
-import com.backend.threatlens.dto.response.ClassificationResponse;
+import com.backend.threatlens.dto.response.posts.ClassificationResponse;
 import com.backend.threatlens.dto.response.posts.PostResponse;
 import com.backend.threatlens.dto.response.posts.TelegramMeta;
 import com.backend.threatlens.enums.PostSource;
 import com.backend.threatlens.enums.RelevanceLevel;
 import com.backend.threatlens.enums.SortBy;
 import com.backend.threatlens.enums.SortOrder;
+import com.backend.threatlens.utils.StopWords;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -43,8 +44,13 @@ public class TelegramRepository implements PostsSourceRepository {
     @Override
     public List<PostResponse> findPage(PostsFilter filter, int offset, int limit, SortBy sortBy, SortOrder sortOrder) {
         String orderColumn = switch (sortBy) {
-            case SCORE -> "score";
-            case DATE  -> "created_at";
+            case SCORE   -> "score";
+            case DATE    -> "created_at";
+            case ID      -> "id";
+            case CONTENT -> "content";
+            // Só há uma fonte hoje (Telegram); ordenar por "fonte" não distingue nada,
+            // então cai de volta para "id" como critério estável.
+            case SOURCE  -> "id";
         };
         String orderDir = sortOrder == SortOrder.DESC ? "DESC" : "ASC";
 
@@ -66,6 +72,7 @@ public class TelegramRepository implements PostsSourceRepository {
                 LEFT JOIN telegram_classified_messages c ON c.id_post = m.id
                 WHERE\s""" + RELEVANCE_FILTER + """
                   AND (:category::text IS NULL OR c.content = :category)
+                  AND (:search::text IS NULL OR m.message ILIKE '%' || :search || '%')
                   AND (:from::timestamp IS NULL OR m."createdAt" >= :from::timestamp)
                   AND (:to::timestamp IS NULL OR m."createdAt" <= :to::timestamp)
                 ORDER BY\s""" + orderColumn + " " + orderDir + " NULLS LAST" + """
@@ -75,6 +82,7 @@ public class TelegramRepository implements PostsSourceRepository {
         Map<String, Object> params = new HashMap<>();
         params.put("relevance", filter.relevance() != null ? filter.relevance().name() : null);
         params.put("category", filter.category());
+        params.put("search", filter.search());
         params.put("from", filter.from());
         params.put("to", filter.to());
         params.put("limit", limit);
@@ -113,6 +121,7 @@ public class TelegramRepository implements PostsSourceRepository {
                 LEFT JOIN telegram_classified_messages c ON c.id_post = m.id
                 WHERE\s""" + RELEVANCE_FILTER + """
                   AND (:category::text IS NULL OR c.content = :category)
+                  AND (:search::text IS NULL OR m.message ILIKE '%' || :search || '%')
                   AND (:from::timestamp IS NULL OR m."createdAt" >= :from::timestamp)
                   AND (:to::timestamp IS NULL OR m."createdAt" <= :to::timestamp)
                 """;
@@ -120,6 +129,7 @@ public class TelegramRepository implements PostsSourceRepository {
         Map<String, Object> params = new HashMap<>();
         params.put("relevance", filter.relevance() != null ? filter.relevance().name() : null);
         params.put("category", filter.category());
+        params.put("search", filter.search());
         params.put("from", filter.from());
         params.put("to", filter.to());
 
@@ -157,6 +167,41 @@ public class TelegramRepository implements PostsSourceRepository {
                 rs.getLong("medium_count"),
                 rs.getLong("high_count")
         ));
+    }
+
+    @Override
+    public List<WordCount> wordFrequencies(PostsFilter filter, int limit) {
+        String sql = """
+                SELECT word, COUNT(*) AS occurrences
+                FROM (
+                    SELECT regexp_split_to_table(
+                               lower(regexp_replace(m.message, '[^[:alpha:]\\s]', ' ', 'g')),
+                               '\\s+'
+                           ) AS word
+                    FROM telegram_message m
+                    LEFT JOIN telegram_classified_messages c ON c.id_post = m.id
+                    WHERE\s""" + RELEVANCE_FILTER + """
+                      AND (:category::text IS NULL OR c.content = :category)
+                      AND (:from::timestamp IS NULL OR m."createdAt" >= :from::timestamp)
+                      AND (:to::timestamp IS NULL OR m."createdAt" <= :to::timestamp)
+                ) words
+                WHERE length(word) > 2
+                  AND word NOT IN (:stopwords)
+                GROUP BY word
+                ORDER BY occurrences DESC
+                LIMIT :limit
+                """;
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("relevance", filter.relevance() != null ? filter.relevance().name() : null);
+        params.put("category", filter.category());
+        params.put("from", filter.from());
+        params.put("to", filter.to());
+        params.put("stopwords", List.copyOf(StopWords.ALL));
+        params.put("limit", limit);
+
+        return jdbcTemplate.query(sql, params, (rs, rowNum) ->
+                new WordCount(rs.getString("word"), rs.getLong("occurrences")));
     }
 
     private long queryCount(String sql, Map<String, Object> params) {
