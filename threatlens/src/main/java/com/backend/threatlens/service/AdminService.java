@@ -36,6 +36,19 @@ public class AdminService {
         userRepository.delete(user);
     }
 
+    @Transactional
+    public void updateUserRole(UUID id, Role newRole) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+        if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN && userRepository.countByRole(Role.ADMIN) <= 1) {
+            throw new BusinessRuleViolationException("Não é permitido remover o último administrador.");
+        }
+
+        user.setRole(newRole);
+        userRepository.save(user);
+    }
+
     @Transactional(readOnly = true)
     public PageResponseDTO<UserSummaryResponseDTO> listUsers(Role role, String search, Pageable pageable) {
         String normalizedSearch = null;

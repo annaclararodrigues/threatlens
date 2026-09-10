@@ -220,6 +220,59 @@ class AdminServiceTest {
         }
     }
 
+    @Nested
+    class UpdateUserRole {
+
+        @Test
+        void userNotFound_throwsResourceNotFoundException() {
+            UUID id = UUID.randomUUID();
+            when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> adminService.updateUserRole(id, Role.USER))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Usuário não encontrado.");
+        }
+
+        @Test
+        void lastAdmin_demotedToUser_throwsBusinessRuleViolationException() {
+            UUID id = UUID.randomUUID();
+            UserEntity admin = buildUser(id, "admin", "admin@test.com", Role.ADMIN, true);
+            when(userRepository.findById(id)).thenReturn(Optional.of(admin));
+            when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
+
+            assertThatThrownBy(() -> adminService.updateUserRole(id, Role.USER))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessage("Não é permitido remover o último administrador.");
+
+            verify(userRepository, org.mockito.Mockito.never()).save(any());
+        }
+
+        @Test
+        void adminWithOtherAdmins_demotedToUser_succeeds() {
+            UUID id = UUID.randomUUID();
+            UserEntity admin = buildUser(id, "admin", "admin@test.com", Role.ADMIN, true);
+            when(userRepository.findById(id)).thenReturn(Optional.of(admin));
+            when(userRepository.countByRole(Role.ADMIN)).thenReturn(2L);
+
+            adminService.updateUserRole(id, Role.USER);
+
+            assertThat(admin.getRole()).isEqualTo(Role.USER);
+            verify(userRepository).save(admin);
+        }
+
+        @Test
+        void regularUser_promotedToAdmin_succeeds() {
+            UUID id = UUID.randomUUID();
+            UserEntity user = buildUser(id, "anna", "anna@test.com", Role.USER, true);
+            when(userRepository.findById(id)).thenReturn(Optional.of(user));
+
+            adminService.updateUserRole(id, Role.ADMIN);
+
+            assertThat(user.getRole()).isEqualTo(Role.ADMIN);
+            verify(userRepository).save(user);
+        }
+    }
+
     private UserEntity buildUser(UUID id, String username, String email, Role role, boolean emailVerified) {
         UserEntity user = UserEntity.builder()
                 .username(username)

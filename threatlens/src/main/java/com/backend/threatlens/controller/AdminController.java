@@ -1,9 +1,11 @@
 package com.backend.threatlens.controller;
 
+import com.backend.threatlens.dto.request.UpdateUserRoleRequestDTO;
 import com.backend.threatlens.dto.response.PageResponseDTO;
 import com.backend.threatlens.dto.response.UserSummaryResponseDTO;
 import com.backend.threatlens.enums.Role;
 import com.backend.threatlens.service.AdminService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -25,6 +27,15 @@ public class AdminController {
     @DeleteMapping("/users/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
         adminService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/users/{id}/role")
+    public ResponseEntity<Void> updateUserRole(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateUserRoleRequestDTO dto
+    ) {
+        adminService.updateUserRole(id, dto.role());
         return ResponseEntity.noContent().build();
     }
 
