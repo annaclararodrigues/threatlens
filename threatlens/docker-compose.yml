@@ -38,5 +38,16 @@ services:
     ports:
       - "8080:8080"
 
+  front:
+    build:
+      context: ${FRONTEND_PATH}
+      args:
+        VITE_API_BASE_URL: /api
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+
 volumes:
   threatlens_db_data:
