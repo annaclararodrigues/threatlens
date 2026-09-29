@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-ssr
+.git
+.idea
+.claude
+.agents
+.env
+.env.*
+!.env.example
