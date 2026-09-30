@@ -4,12 +4,14 @@ import style from "./ForgotPassword.module.css";
 import { authService } from "../../services/auth/authService";
 import { EMAIL_VERIFICATION_KEY, CODE_TYPE_KEY, CODE_TYPE_RESET_PASSWORD } from "../../constants";
 import { storage } from "../../utils";
+import { useToast } from "../../context/ToastContext";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { success } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,6 +22,7 @@ export default function ForgotPassword() {
       await authService.forgotPassword({ email });
       storage.set(EMAIL_VERIFICATION_KEY, email);
       storage.set(CODE_TYPE_KEY, CODE_TYPE_RESET_PASSWORD);
+      success("Código enviado para o seu e-mail.");
       navigate("/verify");
     } catch (err) {
       setError(err.response?.data?.message ?? "Não foi possível enviar o código.");

@@ -59,6 +59,10 @@
     cursor: pointer;
     padding: 0.25rem;
   }
+
+  .title {
+    margin-top: 2.5rem;
+  }
 }
 
 :global(body.light) .closeBtn {

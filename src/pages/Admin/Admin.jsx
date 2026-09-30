@@ -5,24 +5,25 @@ import Header from "../../components/Header/Header";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import { useUsers } from "../../hooks";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 
 export default function Admin() {
   const [page, setPage] = useState(0);
   const { users, pagination, loading, error, deleteUser } = useUsers({ page, size: 20 });
   const { user: currentUser } = useAuth();
+  const { success, error: notifyError } = useToast();
   const [targetUser, setTargetUser] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
 
   async function handleConfirmDelete() {
     setDeleting(true);
-    setDeleteError("");
     try {
       await deleteUser(targetUser.id);
       setTargetUser(null);
+      success("Usuário removido com sucesso.");
       if (users.length === 1 && page > 0) setPage((p) => p - 1);
     } catch {
-      setDeleteError("Erro ao deletar usuário.");
+      notifyError("Erro ao deletar usuário.");
       setTargetUser(null);
     } finally {
       setDeleting(false);
@@ -38,9 +39,7 @@ export default function Admin() {
 
       <div className={style.content}>
         {loading && <p className={style.message}>Carregando usuários...</p>}
-        {(error || deleteError) && (
-          <p className={style.error}>{error || deleteError}</p>
-        )}
+        {error && <p className={style.error}>{error}</p>}
         {!loading && !error && users.length === 0 && (
           <p className={style.message}>Nenhum usuário encontrado.</p>
         )}

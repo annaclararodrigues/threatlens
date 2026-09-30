@@ -3,6 +3,7 @@ import { FaRegEdit } from "react-icons/fa";
 import style from "./MyAccount.module.css";
 import Header from "../../components/Header/Header";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { authService } from "../../services/auth/authService";
 
 const fieldLabels = {
@@ -19,6 +20,7 @@ const fieldTypes = {
 
 export default function MyAccount() {
   const { user } = useAuth();
+  const { success } = useToast();
 
   const [editingField, setEditingField] = useState(null);
   const [modalValue, setModalValue] = useState("");
@@ -66,6 +68,7 @@ export default function MyAccount() {
           newPasswordConfirm: confirmPassword,
         });
         closeModal();
+        success("Senha alterada com sucesso.");
       } catch (err) {
         setModalError(err.response?.data?.message ?? "Erro ao alterar a senha.");
       } finally {

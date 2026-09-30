@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { getPosts } from "../services/post/postService"
 
-export function usePosts({ page = 0, size = 20, period, from, to, relevance, sources, sort, order, category } = {}) {
+export function usePosts({ page = 0, size = 20, period, from, to, relevance, sources, sort, order, category, search } = {}) {
   const [posts, setPosts] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -24,6 +24,7 @@ export function usePosts({ page = 0, size = 20, period, from, to, relevance, sou
     if (sort) params.sort = sort;
     if (order) params.order = order;
     if (category) params.category = category;
+    if (search) params.search = search;
 
     getPosts(params)
       .then((result) => {
@@ -36,7 +37,7 @@ export function usePosts({ page = 0, size = 20, period, from, to, relevance, sou
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [page, size, period, from, to, relevance, sort, order, category]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [page, size, period, from, to, relevance, sort, order, category, search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { posts, pagination, loading, error };
 }

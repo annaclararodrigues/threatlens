@@ -3,8 +3,10 @@ import { useState } from "react";
 import AlertSelectedTags from "../AlertSelectedTags/AlertSelectedTags";
 import RangeSlider from "../RangeSlider/RangeSlider";
 import { FORUM_OPTIONS, FREQUENCY_TYPES } from "../../constants";
+import { useToast } from "../../context/ToastContext";
 
 export default function CreateAlertPopUp({ isOpen, onClose, idUser }) {
+    const { success, error: notifyError } = useToast();
     const [name, setName] = useState("");
     const [forums, setForums] = useState([]);
     const [emails, setEmails] = useState([]);
@@ -39,7 +41,7 @@ export default function CreateAlertPopUp({ isOpen, onClose, idUser }) {
         if (event.key === "Enter" && emailInput.trim() !== "") {
             const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim());
             if (!isValid) {
-                alert("Digite um e-mail válido.");
+                notifyError("Digite um e-mail válido.");
                 return;
             }
             if (!emails.includes(emailInput.trim())) {
@@ -86,27 +88,27 @@ export default function CreateAlertPopUp({ isOpen, onClose, idUser }) {
     // --- Enviar ---
     async function handleBtnCreate() {
         if (!name.trim()) {
-            alert("Informe um nome para o alerta.");
+            notifyError("Informe um nome para o alerta.");
             return;
         }
         if (keywords.length === 0) {
-            alert("Adicione ao menos uma keyword.");
+            notifyError("Adicione ao menos uma keyword.");
             return;
         }
         if (forums.length === 0) {
-            alert("Selecione ao menos uma fonte de busca.");
+            notifyError("Selecione ao menos uma fonte de busca.");
             return;
         }
         if (emails.length === 0) {
-            alert("Adicione ao menos um e-mail para notificação.");
+            notifyError("Adicione ao menos um e-mail para notificação.");
             return;
         }
         if (!startDate) {
-            alert("Informe a data de início.");
+            notifyError("Informe a data de início.");
             return;
         }
         if (!noDeadline && !finalDate) {
-            alert("Informe a data limite ou marque 'Sem data limite'.");
+            notifyError("Informe a data limite ou marque 'Sem data limite'.");
             return;
         }
 
@@ -135,18 +137,18 @@ export default function CreateAlertPopUp({ isOpen, onClose, idUser }) {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                console.error("Erro da API:", error);
-                alert("Erro ao criar alerta. Verifique os dados.");
+                const apiError = await response.json();
+                console.error("Erro da API:", apiError);
+                notifyError("Erro ao criar alerta. Verifique os dados.");
                 return;
             }
 
-            const data = await response.json();
-            console.log("Alerta criado:", data);
+            await response.json();
+            success("Alerta criado com sucesso!");
             handleClosePopUp();
         } catch (err) {
             console.error("Erro na requisição:", err);
-            alert("Não foi possível conectar à API.");
+            notifyError("Não foi possível conectar à API.");
         }
     }
 

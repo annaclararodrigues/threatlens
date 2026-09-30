@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import style from "./VerifyCode.module.css";
 import { authService } from "../../services/auth/authService";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import {
   EMAIL_VERIFICATION_KEY,
   CODE_TYPE_KEY,
@@ -17,11 +18,11 @@ export default function VerifyCode() {
   const [email, setEmail] = useState("");
   const [codeType, setCodeType] = useState(CODE_TYPE_REGISTER);
   const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const inputsRef = useRef([]);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { success: notifySuccess, error: notifyError } = useToast();
 
   useEffect(() => {
     const storedEmail = storage.get(EMAIL_VERIFICATION_KEY);
@@ -67,8 +68,6 @@ export default function VerifyCode() {
   }
 
   const handleResend = async () => {
-    setError("");
-    setSuccessMsg("");
     try {
       if (codeType === CODE_TYPE_RESET_PASSWORD) {
         await authService.resendPasswordCode(email);
@@ -76,10 +75,10 @@ export default function VerifyCode() {
         await authService.resendCode(email);
       }
       setDigits(Array(OTP_LENGTH).fill(""));
-      setSuccessMsg("Novo código enviado para o seu e-mail.");
+      notifySuccess("Novo código enviado para o seu e-mail.");
       inputsRef.current[0]?.focus();
     } catch {
-      setError("Não foi possível reenviar o código.");
+      notifyError("Não foi possível reenviar o código.");
     }
   };
 
@@ -89,7 +88,6 @@ export default function VerifyCode() {
     if (code.length < OTP_LENGTH) return;
 
     setError("");
-    setSuccessMsg("");
     setLoading(true);
     try {
       const { data } = await authService.verify({ email, codeType, code });
@@ -137,7 +135,6 @@ export default function VerifyCode() {
           ))}
         </div>
         {error && <p className={style.errorMsg}>{error}</p>}
-        {successMsg && <p className={style.successMsg}>{successMsg}</p>}
         <input type="submit" value={loading ? "Verificando..." : "Verificar"} disabled={loading} />
       </form>
       <button type="button" className={style.resendBtn} onClick={handleResend}>

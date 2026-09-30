@@ -4,6 +4,7 @@ import style from "./Register.module.css";
 import { authService } from "../../services/auth/authService";
 import { EMAIL_VERIFICATION_KEY, CODE_TYPE_KEY, CODE_TYPE_REGISTER } from "../../constants";
 import { storage } from "../../utils";
+import { useToast } from "../../context/ToastContext";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -13,6 +14,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { success } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,6 +30,7 @@ export default function Register() {
       await authService.register({ username, email, password });
       storage.set(EMAIL_VERIFICATION_KEY, email);
       storage.set(CODE_TYPE_KEY, CODE_TYPE_REGISTER);
+      success("Cadastro realizado! Verifique seu e-mail.");
       navigate("/verify");
     } catch (err) {
       setError(err.response?.data?.message ?? "Erro ao cadastrar.");

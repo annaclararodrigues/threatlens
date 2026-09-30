@@ -3,20 +3,20 @@ import { Link, useNavigate } from "react-router-dom";
 import style from "./Login.module.css";
 import { authService } from "../../services/auth/authService";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { EMAIL_VERIFICATION_KEY, CODE_TYPE_KEY, CODE_TYPE_REGISTER } from "../../constants";
 import { storage } from "../../utils";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { error: notifyError } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
@@ -30,7 +30,7 @@ export default function Login() {
         storage.set(CODE_TYPE_KEY, CODE_TYPE_REGISTER);
         navigate("/verify");
       } else {
-        setError(msg);
+        notifyError(msg);
       }
     } finally {
       setLoading(false);
@@ -63,7 +63,6 @@ export default function Login() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        {error && <p className={style.errorMsg}>{error}</p>}
         <input type="submit" value={loading ? "Entrando..." : "Logar"} disabled={loading} />
       </form>
       <div className={style.loginOptions}>

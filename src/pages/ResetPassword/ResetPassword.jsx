@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import style from "./ResetPassword.module.css";
 import { authService } from "../../services/auth/authService";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -11,6 +12,7 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { success } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,6 +27,7 @@ export default function ResetPassword() {
     try {
       await authService.resetPassword({ password, passwordConfirm });
       await logout();
+      success("Senha redefinida. Faça login com sua nova senha.");
       navigate("/login", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message ?? "Não foi possível redefinir a senha.");
