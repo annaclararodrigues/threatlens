@@ -85,7 +85,7 @@ O front-end faz todas as chamadas para `/api`. Em desenvolvimento, o proxy do Vi
 ```
 threatlens/
 ├── backend/
-│   └── threatlens/                # Projeto Spring Boot (pom.xml, mvnw, Dockerfile, docker-compose.yml)
+│   └── threatlens/                # Projeto Spring Boot (pom.xml, mvnw, Dockerfile)
 │       └── src/
 │           ├── main/java/com/backend/threatlens/
 │           │   ├── bootstrap/     # AdminBootstrapRunner
@@ -102,20 +102,22 @@ threatlens/
 │           │   └── utils/
 │           ├── main/resources/    # application*.properties e migrations Flyway
 │           └── test/
-└── frontend/
-    ├── public/
-    ├── src/
-    │   ├── components/            # Componentes reutilizáveis
-    │   ├── context/               # AuthContext
-    │   ├── hooks/                 # usePosts, useStats, useUsers, useWordCloud, ...
-    │   ├── layouts/
-    │   ├── pages/                 # Home, Posts, Alerts, Admin, Login, Register, ...
-    │   ├── services/              # Comunicação com a API
-    │   └── router.jsx
-    ├── Dockerfile                 # Build + Nginx
-    ├── nginx.conf
-    ├── vite.config.js             # Proxy de /api
-    └── .env.example
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/            # Componentes reutilizáveis
+│   │   ├── context/               # AuthContext
+│   │   ├── hooks/                 # usePosts, useStats, useUsers, useWordCloud, ...
+│   │   ├── layouts/
+│   │   ├── pages/                 # Home, Posts, Alerts, Admin, Login, Register, ...
+│   │   ├── services/              # Comunicação com a API
+│   │   └── router.jsx
+│   ├── Dockerfile                 # Build + Nginx
+│   ├── nginx.conf                 # Serve o front e encaminha /api para a API
+│   ├── vite.config.js             # Proxy de /api (desenvolvimento)
+│   └── .env.example
+├── docker-compose.yml             # Sobe banco, API e front-end
+└── .env.example                   # Variáveis do docker-compose
 ```
 
 ## Pré-requisitos
@@ -242,32 +244,50 @@ Os testes do back-end (JUnit 5 + Mockito + AssertJ) usam H2 em memória em modo 
 
 ## Build e Deploy
 
-### Com Docker Compose (aplicação completa)
+### Em um servidor, com Docker Compose (recomendado)
 
-O [docker-compose.yml](backend/threatlens/docker-compose.yml) em `backend/threatlens/` sobe a aplicação inteira:
-
-| Serviço | Imagem / build | Porta | Descrição |
-|---|---|---|---|
-| `db` | `postgres:16-alpine` | `5432` | Banco primário (`threatlens`), com volume persistente `threatlens_db_data` |
-| `app` | [backend/threatlens/Dockerfile](backend/threatlens/Dockerfile) | `8080` | API Spring Boot (build com Maven + JRE 21), sobe após o `db` ficar saudável |
-| `front` | [frontend/Dockerfile](frontend/Dockerfile) | `80` | Build do React servida por Nginx, que encaminha `/api/` para o serviço `app` |
-
-O banco de posts (`asgard`) **não** sobe no compose: ele é externo e acessado via `POSTS_DB_URL`.
+O [docker-compose.yml](docker-compose.yml) na raiz sobe a aplicação inteira. No servidor, basta ter **Docker** com o plugin **Compose** instalado:
 
 ```bash
-cd backend/threatlens
-cp .env.example .env   # preencha JWT_SECRET, POSTS_DB_*, MAIL_PASSWORD e, opcionalmente, ADMIN_*
+git clone git@github.com:annaclararodrigues/threatlens.git
+cd threatlens
+cp .env.example .env   # preencha JWT_SECRET, DB_PASSWORD, POSTS_DB_*, MAIL_PASSWORD e, opcionalmente, ADMIN_*
 docker compose up -d --build
 ```
 
-A aplicação fica disponível em **http://localhost** e a API em `http://localhost:8080`.
+A aplicação fica disponível em **http://IP-DO-SERVIDOR** (porta `HTTP_PORT`, padrão `80`).
+
+| Serviço | Imagem / build | Exposto | Descrição |
+|---|---|---|---|
+| `db` | `postgres:16-alpine` | não | Banco primário (`threatlens`), com volume persistente `threatlens_db_data` |
+| `app` | [backend/threatlens/Dockerfile](backend/threatlens/Dockerfile) | não | API Spring Boot com perfil `prod`, sobe após o `db` ficar saudável |
+| `front` | [frontend/Dockerfile](frontend/Dockerfile) | `HTTP_PORT` | Build do React servida por Nginx, que encaminha `/api/` para o serviço `app` |
+
+Apenas o `front` fica exposto. O banco e a API ficam acessíveis só na rede interna do Docker, e o navegador chega à API por `/api`.
+
+Observações:
+
+- O banco de posts (`asgard`) **não** sobe no compose: ele é externo e acessado via `POSTS_DB_URL`. Se ele roda na própria máquina do servidor, use `host.docker.internal` no lugar de `localhost`.
+- `JWT_SECRET`, `POSTS_DB_URL` e `POSTS_DB_USERNAME` são obrigatórios: o `docker compose up` falha com uma mensagem explicativa se estiverem vazios.
+- **HTTPS:** com `COOKIE_SECURE=false` (padrão do `.env.example`), a aplicação funciona em HTTP puro. Ao colocar o servidor atrás de HTTPS (ex.: um proxy reverso com certificado), defina `COOKIE_SECURE=true`.
 
 Variáveis específicas do compose (além das listadas em [Variáveis de Ambiente](#variáveis-de-ambiente)):
 
 | Variável | Descrição | Padrão |
 |---|---|---|
+| `HTTP_PORT` | Porta do servidor em que o front-end fica exposto | `80` |
 | `DB_USERNAME` / `DB_PASSWORD` | Credenciais do Postgres do container `db`, usadas também pela API | `postgres` / `postgres` |
-| `FRONTEND_PATH` | Build context do serviço `front`, relativo a `backend/threatlens/` | `../../frontend` |
+| `MAIL_USERNAME` | Conta SMTP remetente dos e-mails | `threatlens2025@gmail.com` |
+| `COOKIE_SECURE` | Atributo `Secure` dos cookies de sessão (`true` exige HTTPS) | `false` |
+
+Para atualizar o servidor depois de novos commits:
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+Comandos úteis: `docker compose logs -f app` (logs da API), `docker compose ps` (status) e `docker compose down` (para tudo, mantendo os dados do banco no volume).
 
 ### Manualmente
 
