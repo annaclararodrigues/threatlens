@@ -85,7 +85,7 @@ O front-end faz todas as chamadas para `/api`. Em desenvolvimento, o proxy do Vi
 ```
 threatlens/
 ├── backend/
-│   └── threatlens/                # Projeto Spring Boot (pom.xml, mvnw)
+│   └── threatlens/                # Projeto Spring Boot (pom.xml, mvnw, Dockerfile, docker-compose.yml)
 │       └── src/
 │           ├── main/java/com/backend/threatlens/
 │           │   ├── bootstrap/     # AdminBootstrapRunner
@@ -242,6 +242,35 @@ Os testes do back-end (JUnit 5 + Mockito + AssertJ) usam H2 em memória em modo 
 
 ## Build e Deploy
 
+### Com Docker Compose (aplicação completa)
+
+O [docker-compose.yml](backend/threatlens/docker-compose.yml) em `backend/threatlens/` sobe a aplicação inteira:
+
+| Serviço | Imagem / build | Porta | Descrição |
+|---|---|---|---|
+| `db` | `postgres:16-alpine` | `5432` | Banco primário (`threatlens`), com volume persistente `threatlens_db_data` |
+| `app` | [backend/threatlens/Dockerfile](backend/threatlens/Dockerfile) | `8080` | API Spring Boot (build com Maven + JRE 21), sobe após o `db` ficar saudável |
+| `front` | [frontend/Dockerfile](frontend/Dockerfile) | `80` | Build do React servida por Nginx, que encaminha `/api/` para o serviço `app` |
+
+O banco de posts (`asgard`) **não** sobe no compose: ele é externo e acessado via `POSTS_DB_URL`.
+
+```bash
+cd backend/threatlens
+cp .env.example .env   # preencha JWT_SECRET, POSTS_DB_*, MAIL_PASSWORD e, opcionalmente, ADMIN_*
+docker compose up -d --build
+```
+
+A aplicação fica disponível em **http://localhost** e a API em `http://localhost:8080`.
+
+Variáveis específicas do compose (além das listadas em [Variáveis de Ambiente](#variáveis-de-ambiente)):
+
+| Variável | Descrição | Padrão |
+|---|---|---|
+| `DB_USERNAME` / `DB_PASSWORD` | Credenciais do Postgres do container `db`, usadas também pela API | `postgres` / `postgres` |
+| `FRONTEND_PATH` | Build context do serviço `front`, relativo a `backend/threatlens/` | `../../frontend` |
+
+### Manualmente
+
 **Back-end** — gere o `.jar` e execute com o perfil `prod`:
 
 ```bash
@@ -250,14 +279,7 @@ cd backend/threatlens
 SPRING_PROFILES_ACTIVE=prod java -jar target/threatlens-0.0.1-SNAPSHOT.jar
 ```
 
-**Front-end** — há um [Dockerfile](frontend/Dockerfile) que gera a build com Node 20 e a serve com Nginx na porta 80. O [nginx.conf](frontend/nginx.conf) encaminha `/api/` para `http://app:8080/`, ou seja, espera o back-end acessível pelo hostname `app` na mesma rede Docker:
-
-```bash
-cd frontend
-docker build -t threatlens-frontend .
-```
-
-Alternativamente, `npm run build` gera os arquivos estáticos em `dist/`, que podem ser servidos por qualquer servidor estático, desde que `/api` seja encaminhado para a API (ou `VITE_API_BASE_URL` aponte para ela).
+**Front-end** — `npm run build` gera os arquivos estáticos em `dist/`, que podem ser servidos por qualquer servidor estático, desde que `/api` seja encaminhado para a API (ou `VITE_API_BASE_URL` aponte para ela).
 
 ## Contribuindo
 
