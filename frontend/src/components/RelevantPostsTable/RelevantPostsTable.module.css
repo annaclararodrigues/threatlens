@@ -1,0 +1,107 @@
+.description {
+    color: var(--color-text);
+    margin-bottom: 2rem;
+    font-size: 22px;
+}
+
+.tableContainer {
+    background-color: var(--color-surface);
+    width: 100%;
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.tableScroll {
+    overflow-x: auto;
+    overflow-y: scroll;
+    scrollbar-color: var(--color-text-subtle) var(--color-bg);
+    height: 16rem;
+    padding-right: 0.5rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 400px;
+}
+
+thead {
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    height: 3rem;
+}
+
+thead th:first-child {
+    border-top-left-radius: var(--radius-md);
+    border-bottom-left-radius: var(--radius-md);
+}
+
+thead th:last-child {
+    border-top-right-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+}
+
+tbody tr {
+    color: var(--color-text-muted);
+    height: 3rem;
+}
+
+td {
+    padding: 0 0.5rem;
+    white-space: nowrap;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 250px;
+    scrollbar-width: thin;
+    scrollbar-color: #888 transparent;
+}
+
+tbody tr:nth-child(even) {
+    background-color: var(--color-bg);
+}
+
+tbody tr:nth-child(even) td:first-child {
+    border-top-left-radius: var(--radius-md);
+    border-bottom-left-radius: var(--radius-md);
+}
+
+tbody tr:nth-child(even) td:last-child {
+    border-top-right-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+}
+
+table a {
+    text-decoration: none;
+    color: var(--color-accent);
+}
+
+.rate {
+    color: #FF2E2E;
+}
+
+:global(body.light) .tableContainer {
+  background-color: var(--color-surface-light);
+  box-shadow: var(--shadow-card);
+}
+
+:global(body.light) .description {
+  color: var(--color-surface);
+}
+
+:global(body.light) thead {
+  color: var(--color-text-secondary-light);
+  background-color: var(--color-surface-muted-light);
+}
+
+:global(body.light) tbody tr:nth-child(even) {
+    background-color: var(--color-surface-muted-light);
+}
+
+:global(body.light) tbody tr {
+    color: var(--color-text-subtle);
+}
+
+:global(body.light) .tableScroll {
+    scrollbar-color: var(--color-surface-muted-light) var(--color-text-muted);
+}

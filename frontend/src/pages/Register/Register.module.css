@@ -1,0 +1,87 @@
+
+.registerContainer {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+h1 {
+    color: var(--color-text);
+    font-size: 2.5rem;
+}
+
+.highlight {
+    color: var(--color-accent);
+}
+
+p {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+}
+
+.registerForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.registerForm input {
+    width: 25rem;
+    height: 3rem;
+    border-radius: var(--radius-lg);
+    border: none;
+    background-color: var(--color-surface);
+    padding-left: 1rem;
+    color: var(--color-text);
+    font-size: 1rem;
+}
+
+.registerForm input::placeholder {
+    color: var(--color-text);
+}
+
+.registerForm input[type="submit"] {
+    font-weight: bold;
+    font-size: 1rem;
+    color: var(--color-text);
+    background-color: var(--color-accent);
+    cursor: pointer;
+    padding: 0;
+}
+
+.registerForm input[type="submit"]:hover {
+    background-color: rgb(89, 74, 255);
+}
+
+a {
+    text-decoration: none;
+    color: var(--color-text);
+    font-size: 1rem;
+}
+
+a:hover {
+    color: var(--color-text-muted);
+}
+
+.errorMsg {
+    color: #ff4d4f;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+@media (max-width: 425px) {
+    .registerContainer {
+        width: 100%;
+        padding: 0 1rem;
+    }
+
+    form input {
+        width: 100%;
+    }
+}

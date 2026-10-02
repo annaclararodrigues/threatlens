@@ -1,0 +1,109 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: var(--z-overlay);
+}
+
+.postPopUp {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: calc(var(--z-overlay) + 1);
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    width: 60%;
+    max-width: 45rem;
+    max-height: 85vh;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-card);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.header h1 {
+    color: var(--color-text);
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.closeBtn {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.4rem;
+    border-radius: var(--radius-sm);
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.closeBtn:hover {
+    color: var(--color-text);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.postContainer {
+    overflow-y: auto;
+}
+
+.postAttributes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem 1.5rem;
+}
+
+.postDivider {
+    border: none;
+    height: 1px;
+    background-color: var(--color-text-subtle);
+    opacity: 0.3;
+    margin: 1.5rem 0;
+}
+
+.postBody p {
+    color: var(--color-text-muted);
+    line-height: 1.75rem;
+}
+
+/* Light mode */
+:global(body.light) .postPopUp {
+    background-color: var(--color-surface-light);
+}
+
+:global(body.light) .header h1 {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .closeBtn {
+    color: var(--color-text-muted-light);
+}
+
+:global(body.light) .closeBtn:hover {
+    color: var(--color-text-light);
+    background-color: var(--color-surface-muted-light);
+}
+
+:global(body.light) .postBody p {
+    color: var(--color-text-secondary-light);
+}
+
+@media (max-width: 768px) {
+    .postPopUp {
+        width: 90%;
+        padding: 1.5rem;
+    }
+
+    .postAttributes {
+        grid-template-columns: 1fr;
+    }
+}

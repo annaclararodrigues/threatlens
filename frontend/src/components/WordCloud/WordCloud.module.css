@@ -1,0 +1,48 @@
+.wordCloudContainer {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    margin-top: 2rem;
+    padding: 2rem;
+}
+
+.description {
+    color: var(--color-text);
+    margin-bottom: 2rem;
+    font-size: 22px;
+}
+
+.wordCloudComponent {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.word {
+  font-family: Arial, sans-serif;
+  fill: var(--color-text);
+  transition: fill 0.3s;
+}
+
+.word:hover {
+  fill: var(--color-accent);
+  cursor: pointer;
+}
+
+:global(body.light) .description {
+  color: var(--color-surface);
+}
+
+:global(body.light) .wordCloudContainer {
+  background-color: var(--color-surface-light);
+  box-shadow: var(--shadow-card);
+}
+
+:global(body.light) .word {
+  fill: var(--color-text-subtle);
+}
+
+:global(body.light) .word:hover {
+  fill: var(--color-accent);
+}
