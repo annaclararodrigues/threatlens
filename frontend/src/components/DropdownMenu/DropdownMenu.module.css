@@ -1,0 +1,104 @@
+.wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    z-index: var(--z-overlay);
+    min-width: 13rem;
+    padding: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.alignRight {
+    right: 0;
+}
+
+.alignLeft {
+    left: 0;
+}
+
+.header {
+    padding: 0.6rem 0.75rem 0.75rem;
+    margin-bottom: 0.4rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border: none;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.item:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.icon {
+    display: inline-flex;
+    font-size: 1.05rem;
+    color: var(--color-text-muted);
+}
+
+.danger,
+.danger .icon {
+    color: var(--color-danger);
+}
+
+.danger:hover {
+    background-color: rgba(240, 68, 56, 0.1);
+}
+
+/* Linha separando o item (ex.: ação destrutiva) dos anteriores */
+.separated {
+    position: relative;
+    margin-top: 0.4rem;
+}
+
+.separated::before {
+    content: "";
+    position: absolute;
+    top: calc(-0.2rem - 1px);
+    left: 0;
+    right: 0;
+    border-top: 1px solid var(--color-border);
+}
+
+:global(body.light) .menu {
+    background-color: var(--color-surface-light);
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.15);
+}
+
+:global(body.light) .item:not(.danger) {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .item:hover {
+    background-color: var(--color-surface-muted-light);
+}
+
+:global(body.light) .item:not(.danger) .icon {
+    color: var(--color-text-muted-light);
+}
+
+:global(body.light) .danger:hover {
+    background-color: rgba(240, 68, 56, 0.08);
+}

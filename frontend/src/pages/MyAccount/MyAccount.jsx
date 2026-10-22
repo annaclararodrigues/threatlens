@@ -1,166 +1,146 @@
 import { useState } from "react";
-import { FaRegEdit } from "react-icons/fa";
 import style from "./MyAccount.module.css";
 import Header from "../../components/Header/Header";
+import Avatar from "../../components/Avatar/Avatar";
+import RoleBadge from "../../components/RoleBadge/RoleBadge";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { authService } from "../../services/auth/authService";
+import PasswordInput from "../../components/PasswordInput/PasswordInput";
 
-const fieldLabels = {
-  username: "Nome de usuário",
-  email: "Email",
-  password: "Senha",
-};
-
-const fieldTypes = {
-  username: "text",
-  email: "email",
-  password: "password",
-};
-
+// Os dados do perfil são só leitura: o backend ainda não permite alterar nome ou email
 export default function MyAccount() {
   const { user } = useAuth();
   const { success } = useToast();
 
-  const [editingField, setEditingField] = useState(null);
-  const [modalValue, setModalValue] = useState("");
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [modalError, setModalError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const displayValues = {
-    username: user?.username ?? "",
-    email: user?.email ?? "",
-    password: "••••••••",
-  };
-
-  function openModal(field) {
-    setEditingField(field);
-    setModalValue("");
+  function openPasswordModal() {
     setCurrentPassword("");
+    setNewPassword("");
     setConfirmPassword("");
     setModalError("");
+    setPasswordModalOpen(true);
   }
 
-  function closeModal() {
-    setEditingField(null);
-    setModalValue("");
-    setCurrentPassword("");
-    setConfirmPassword("");
-    setModalError("");
+  function closePasswordModal() {
+    setPasswordModalOpen(false);
   }
 
-  async function handleSave() {
+  async function handleChangePassword(e) {
+    e.preventDefault();
     setModalError("");
 
-    if (editingField === "password") {
-      if (!currentPassword.trim() || !modalValue.trim() || !confirmPassword.trim()) return;
-      if (modalValue !== confirmPassword) {
-        setModalError("As senhas não coincidem.");
-        return;
-      }
-      setSaving(true);
-      try {
-        await authService.changePassword({
-          currentPassword,
-          newPassword: modalValue,
-          newPasswordConfirm: confirmPassword,
-        });
-        closeModal();
-        success("Senha alterada com sucesso.");
-      } catch (err) {
-        setModalError(err.response?.data?.message ?? "Erro ao alterar a senha.");
-      } finally {
-        setSaving(false);
-      }
-    } else {
-      // username / email changes not yet supported by the backend
-      closeModal();
+    if (!currentPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+      setModalError("Preencha todos os campos.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setModalError("As senhas não coincidem.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await authService.changePassword({
+        currentPassword,
+        newPassword,
+        newPasswordConfirm: confirmPassword,
+      });
+      closePasswordModal();
+      success("Senha alterada com sucesso.");
+    } catch (err) {
+      setModalError(err.response?.data?.message ?? "Erro ao alterar a senha.");
+    } finally {
+      setSaving(false);
     }
   }
 
   return (
-    <div className={style.myAccount}>
+    <div>
       <Header
         pageName="Minha conta"
         pageDescription="Gerencie as informações da sua conta"
       />
 
-      <div className={style.myAccountContainer}>
-        <form className={style.myAccountForm}>
-          {Object.keys(displayValues).map((field) => (
-            <div key={field} className={style.formGroup}>
-              <label htmlFor={field}>{fieldLabels[field]}</label>
-              <div className={style.inputRow}>
-                <input
-                  id={field}
-                  type={fieldTypes[field]}
-                  value={displayValues[field]}
-                  disabled
-                  readOnly
-                />
-                {field === "password" && (
-                  <button
-                    type="button"
-                    className={style.editIconBtn}
-                    onClick={() => openModal(field)}
-                  >
-                    <FaRegEdit />
-                  </button>
-                )}
-              </div>
+      <div className={style.cards}>
+        <section className={style.card} aria-labelledby="profile-title">
+          <h3 id="profile-title" className={style.cardTitle}>Perfil</h3>
+          <div className={style.profile}>
+            <Avatar name={user?.username} size="lg" />
+            <div className={style.profileInfo}>
+              <span className={style.name}>{user?.username}</span>
+              <span className={style.email}>{user?.email}</span>
+              <RoleBadge role={user?.role} />
             </div>
-          ))}
-        </form>
+          </div>
+        </section>
+
+        <section className={style.card} aria-labelledby="security-title">
+          <h3 id="security-title" className={style.cardTitle}>Segurança</h3>
+          <div className={style.row}>
+            <div>
+              <span className={style.rowLabel}>Senha</span>
+              <p className={style.rowHint}>Use uma senha forte que você não use em outros sites.</p>
+            </div>
+            <button type="button" className={style.secondaryBtn} onClick={openPasswordModal}>
+              Alterar senha
+            </button>
+          </div>
+        </section>
       </div>
 
-      {editingField === "password" && (
+      {passwordModalOpen && (
         <>
-          <div className={style.overlay} onClick={closeModal} />
-          <div className={style.modal}>
-            <h3 className={style.modalTitle}>Alterar {fieldLabels[editingField]}</h3>
+          <div className={style.overlay} onClick={closePasswordModal} />
+          <form className={style.modal} role="dialog" aria-modal="true" aria-labelledby="password-title" onSubmit={handleChangePassword}>
+            <h3 id="password-title" className={style.modalTitle}>Alterar senha</h3>
             <div className={style.modalField}>
               <label htmlFor="currentPassword">Senha atual</label>
-              <input
+              <PasswordInput
                 id="currentPassword"
-                type="password"
                 placeholder="Digite sua senha atual"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
                 autoFocus
               />
             </div>
             <div className={style.modalField}>
               <label htmlFor="newPassword">Nova senha</label>
-              <input
+              <PasswordInput
                 id="newPassword"
-                type="password"
                 placeholder="Digite a nova senha"
-                value={modalValue}
-                onChange={(e) => setModalValue(e.target.value)}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
               />
             </div>
             <div className={style.modalField}>
               <label htmlFor="confirmPassword">Confirmar nova senha</label>
-              <input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
                 placeholder="Repita a nova senha"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
               />
             </div>
             {modalError && <p className={style.modalError}>{modalError}</p>}
             <div className={style.modalActions}>
-              <button type="button" className={style.cancelBtn} onClick={closeModal}>
+              <button type="button" className={style.cancelBtn} onClick={closePasswordModal}>
                 Cancelar
               </button>
-              <button type="button" className={style.saveBtn} onClick={handleSave} disabled={saving}>
-                {saving ? "Salvando..." : "Salvar"}
+              <button type="submit" className={style.saveBtn} disabled={saving}>
+                {saving ? "Salvando..." : "Alterar senha"}
               </button>
             </div>
-          </div>
+          </form>
         </>
       )}
     </div>

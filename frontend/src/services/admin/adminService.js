@@ -5,4 +5,6 @@ export const adminService = {
     api.get("/admin/users", { params: { role, search, page, size, sort: "username,asc" } }),
 
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
+
+  updateRole: (id, role) => api.patch(`/admin/users/${id}/role`, { role }),
 };
