@@ -3,7 +3,7 @@ import { AUTH_USER_KEY } from "../constants";
 import { storage } from "../utils";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
   withCredentials: true,
 });
 
