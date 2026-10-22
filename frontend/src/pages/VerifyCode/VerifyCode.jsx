@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import style from "./VerifyCode.module.css";
 import { authService } from "../../services/auth/authService";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -12,6 +11,8 @@ import {
   OTP_LENGTH,
 } from "../../constants";
 import { storage } from "../../utils";
+import AuthLayout, { AuthError, AuthSubmit } from "../../components/AuthLayout/AuthLayout";
+import style from "../../components/AuthLayout/AuthLayout.module.css";
 
 export default function VerifyCode() {
   const [digits, setDigits] = useState(Array(OTP_LENGTH).fill(""));
@@ -19,6 +20,7 @@ export default function VerifyCode() {
   const [codeType, setCodeType] = useState(CODE_TYPE_REGISTER);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const inputsRef = useRef([]);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -68,6 +70,7 @@ export default function VerifyCode() {
   }
 
   const handleResend = async () => {
+    setResending(true);
     try {
       if (codeType === CODE_TYPE_RESET_PASSWORD) {
         await authService.resendPasswordCode(email);
@@ -79,6 +82,8 @@ export default function VerifyCode() {
       inputsRef.current[0]?.focus();
     } catch {
       notifyError("Não foi possível reenviar o código.");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -109,22 +114,35 @@ export default function VerifyCode() {
     }
   };
 
+  const complete = digits.every(Boolean);
+
   return (
-    <div className={style.verifyCodeContainer}>
-      <h1>
-        Threat<span className={style.highlight}>Lens</span>
-      </h1>
-      <p>Enviamos um código de verificação para o seu e-mail</p>
-      <p>Digite o código abaixo</p>
-      <form onSubmit={handleSubmit} className={style.verifyForm}>
-        <div className={style.otpContainer}>
+    <AuthLayout
+      subtitle={
+        <>
+          Enviamos um código de {OTP_LENGTH} dígitos para{" "}
+          <strong className={style.highlight}>{email}</strong>
+        </>
+      }
+      footer={
+        <>
+          Não recebeu?{" "}
+          <button type="button" className={style.linkButton} onClick={handleResend} disabled={resending}>
+            {resending ? "Reenviando..." : "Reenviar código"}
+          </button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className={style.form}>
+        <div className={style.otp} role="group" aria-label="Código de verificação">
           {digits.map((digit, i) => (
             <input
               key={i}
               ref={(el) => (inputsRef.current[i] = el)}
-              className={style.otpInput}
               type="text"
               inputMode="numeric"
+              autoComplete={i === 0 ? "one-time-code" : "off"}
+              aria-label={`Dígito ${i + 1}`}
               maxLength={1}
               value={digit}
               onChange={(e) => handleChange(i, e.target.value)}
@@ -134,12 +152,12 @@ export default function VerifyCode() {
             />
           ))}
         </div>
-        {error && <p className={style.errorMsg}>{error}</p>}
-        <input type="submit" value={loading ? "Verificando..." : "Verificar"} disabled={loading} />
+
+        <AuthError>{error}</AuthError>
+        <AuthSubmit loading={loading} loadingLabel="Verificando..." disabled={!complete}>
+          Verificar
+        </AuthSubmit>
       </form>
-      <button type="button" className={style.resendBtn} onClick={handleResend}>
-        Reenviar código
-      </button>
-    </div>
+    </AuthLayout>
   );
 }

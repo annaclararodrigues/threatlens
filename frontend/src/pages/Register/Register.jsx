@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import style from "./Register.module.css";
 import { authService } from "../../services/auth/authService";
 import { EMAIL_VERIFICATION_KEY, CODE_TYPE_KEY, CODE_TYPE_REGISTER } from "../../constants";
 import { storage } from "../../utils";
 import { useToast } from "../../context/ToastContext";
+import PasswordInput from "../../components/PasswordInput/PasswordInput";
+import AuthLayout, { AuthError, AuthSubmit } from "../../components/AuthLayout/AuthLayout";
+import style from "../../components/AuthLayout/AuthLayout.module.css";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -40,48 +42,72 @@ export default function Register() {
   };
 
   return (
-    <div className={style.registerContainer}>
-      <h1>
-        Threat<span className={style.highlight}>Lens</span>
-      </h1>
-      <p>
-        Olá! Faça o cadastro para poder logar no sistema ou logue{" "}
-        <Link to="/login" className={style.highlight}>
-          aqui
-        </Link>
-      </p>
-      <form onSubmit={handleSubmit} className={style.registerForm}>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Nome de usuário"
-          required
-        />
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="E-mail"
-          required
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Senha"
-          required
-        />
-        <input
-          type="password"
-          value={repeatPassword}
-          onChange={(e) => setRepeatPassword(e.target.value)}
-          placeholder="Repita a senha"
-          required
-        />
-        {error && <p className={style.errorMsg}>{error}</p>}
-        <input type="submit" value={loading ? "Cadastrando..." : "Cadastrar"} disabled={loading} />
+    <AuthLayout
+      subtitle="Crie sua conta para acessar o painel"
+      footer={
+        <>
+          Já tem conta?{" "}
+          <Link to="/login" className={style.link}>
+            Entrar
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className={style.form}>
+        <div className={style.field}>
+          <label htmlFor="username" className={style.label}>Nome</label>
+          <input
+            id="username"
+            type="text"
+            autoComplete="name"
+            placeholder="Seu nome"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            autoFocus
+          />
+        </div>
+
+        <div className={style.field}>
+          <label htmlFor="email" className={style.label}>E-mail</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="voce@empresa.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className={style.field}>
+          <label htmlFor="password" className={style.label}>Senha</label>
+          <PasswordInput
+            id="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className={style.field}>
+          <label htmlFor="repeatPassword" className={style.label}>Confirmar senha</label>
+          <PasswordInput
+            id="repeatPassword"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            value={repeatPassword}
+            onChange={(e) => setRepeatPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <AuthError>{error}</AuthError>
+        <AuthSubmit loading={loading} loadingLabel="Criando conta...">Criar conta</AuthSubmit>
       </form>
-    </div>
+    </AuthLayout>
   );
 }
