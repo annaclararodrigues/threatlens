@@ -1,0 +1,18 @@
+/* Ícone da fonte dentro de um círculo na cor da marca */
+.badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--source-color);
+    color: #FFFFFF;
+}
+
+.telegram {
+    --source-color: var(--color-source-telegram);
+}
+
+.generic {
+    --source-color: var(--color-text-subtle);
+}

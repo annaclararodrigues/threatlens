@@ -1,0 +1,144 @@
+.wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.trigger {
+    display: inline-flex;
+    align-items: center;
+    height: 2.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    overflow: hidden;
+}
+
+.triggerActive {
+    border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+    background-color: var(--color-accent-soft);
+}
+
+.triggerButton {
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.9rem;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.triggerButton > svg {
+    flex-shrink: 0;
+    font-size: 1.05rem;
+}
+
+.triggerButton .caret {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.clear {
+    height: 100%;
+    padding: 0 0.7rem;
+    border: none;
+    border-left: 1px solid var(--color-border);
+    background: none;
+    color: var(--color-text-muted);
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.clear:hover {
+    color: var(--color-text);
+}
+
+.popover {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    z-index: var(--z-overlay);
+    min-width: 13rem;
+    padding: 0.4rem;
+    list-style: none;
+    background-color: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.alignRight {
+    left: auto;
+    right: 0;
+}
+
+.popover li {
+    margin: 0;
+}
+
+.option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.6rem;
+    border: none;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.option:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.check {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-text-subtle);
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.optionSelected .check {
+    border-color: var(--color-accent);
+    background-color: var(--color-accent);
+    color: var(--color-on-accent);
+}
+
+:global(body.light) .trigger {
+    background-color: var(--color-surface-light);
+    color: var(--color-text-light);
+}
+
+:global(body.light) .trigger.triggerActive {
+    background-color: var(--color-accent-soft);
+}
+
+:global(body.light) .popover {
+    background-color: var(--color-surface-light);
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.15);
+}
+
+:global(body.light) .option {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .option:hover {
+    background-color: var(--color-surface-muted-light);
+}
