@@ -1,3 +1,8 @@
+/* Espaço da sidebar fixa (15rem + respiro); as páginas não repetem essa margem */
+.content {
+  margin: 1rem 3rem 2rem 18rem;
+}
+
 .hamburger {
   display: none;
 }
@@ -6,7 +11,12 @@
   display: none;
 }
 
-@media (max-width: 768px) {
+/* Abaixo de 1024px a sidebar vira gaveta: o conteúdo ganha a largura toda */
+@media (max-width: 1024px) {
+  .content {
+    margin: 0 1rem 2rem;
+  }
+
   .hamburger {
     display: flex;
     flex-direction: column;
