@@ -1,69 +1,256 @@
 .postsTable {
-    border-collapse: separate;
-    border-spacing: 0px;
     width: 100%;
-    min-width: 700px;
+    border-collapse: separate;
+    border-spacing: 0;
     table-layout: fixed;
 }
 
+.colId { width: 80px; }
+.colDate { width: 130px; }
+.colSource { width: 140px; }
+.colScore { width: 84px; }
+.colOpen { width: 40px; }
+
 .postsTable th,
 .postsTable td {
-    padding: 12px 16px;
+    padding: 0.7rem 0.75rem;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    vertical-align: middle;
 }
 
+/* Cabeçalho plano, fixo no scroll da página */
 .postsTable th {
-    background-color: #212631;
-    color: #eee;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 500;
 }
 
-.postsTable th.sortable {
+/* Ordenação: rótulo na cor normal; seta só no hover (inativa) ou em roxo (ativa) */
+.thSort {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: -4px -6px;
+    padding: 4px 6px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: inherit;
+    font: inherit;
     cursor: pointer;
     user-select: none;
 }
 
-.postsTable th.sortable:hover {
-    color: #fff;
+.thSort:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: var(--color-text);
 }
 
-.sortIndicator {
-    display: inline-flex;
-    flex-direction: column;
-    vertical-align: middle;
-    margin-left: 6px;
-    font-size: 0.6em;
-    line-height: 0.8;
-    color: #6b7280;
+.arrow {
+    width: 14px;
+    height: 14px;
+    opacity: 0;
+    transition: opacity 0.15s, transform 0.15s;
 }
 
-.sortActive {
-    color: #4f9dff;
+.thSort:hover .arrow {
+    opacity: 0.4;
 }
 
-:global(body.light) .sortIndicator {
-    color: #999999;
+.thSort .arrowActive {
+    opacity: 1;
+    color: var(--color-accent);
 }
 
+.arrowUp {
+    transform: rotate(180deg);
+}
+
+/* Linhas: divisores no lugar da zebra */
 .postsTable td {
-    color: #B0B0B0;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 14px;
 }
 
-.postsTable tbody tr:nth-child(even) {
-    background-color: #212631;
+.postsTable tbody tr:last-child td {
+    border-bottom: none;
 }
 
+.row {
+    cursor: pointer;
+}
+
+.postsTable tbody .row:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.postsTable tbody .row.selectedRow {
+    background-color: var(--color-accent-soft);
+}
+
+.postsTable tbody .row.selectedRow td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.date {
+    font-variant-numeric: tabular-nums;
+}
+
+.postsTable td.id {
+    color: var(--color-text-subtle);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.source {
+    color: var(--color-text);
+}
+
+.sourceCell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 100%;
+}
+
+.postsTable td.content {
+    color: var(--color-text);
+}
+
+.postsTable td.open {
+    padding: 0 0.25rem;
+    text-align: right;
+    text-overflow: clip;
+}
+
+/* Chevron só aparece no hover ou na linha aberta */
+.openButton {
+    display: inline-flex;
+    padding: 0.2rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.row:hover .openButton,
+.selectedRow .openButton,
+.openButton:focus-visible {
+    opacity: 1;
+}
+
+.message {
+    padding: 1rem;
+    color: var(--color-text-muted);
+}
+
+/* ── Celular: cada linha vira um card (score e data em cima, texto embaixo) ──
+   A ordenação fica na URL e no padrão (score); o cabeçalho sai por falta de espaço. */
+@media (max-width: 640px) {
+    .postsTable,
+    .postsTable tbody {
+        display: block;
+    }
+
+    .postsTable colgroup,
+    .postsTable thead,
+    .postsTable td.id,
+    .postsTable td.source {
+        display: none;
+    }
+
+    .row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        grid-template-areas:
+            "score date open"
+            "content content content";
+        align-items: center;
+        column-gap: 0.6rem;
+        row-gap: 0.4rem;
+        padding: 0.8rem 0.25rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .postsTable tbody .row:last-child {
+        border-bottom: none;
+    }
+
+    .postsTable td {
+        display: block;
+        padding: 0;
+        border-bottom: none;
+    }
+
+    .postsTable td.score { grid-area: score; }
+    .postsTable td.date { grid-area: date; font-size: 13px; }
+    .postsTable td.open { grid-area: open; }
+
+    /* Até duas linhas do texto, em vez de cortar numa só */
+    .postsTable td.content {
+        grid-area: content;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        line-height: 1.4;
+    }
+
+    /* Sem hover no toque: o chevron fica sempre visível */
+    .openButton {
+        opacity: 1;
+    }
+
+    .postsTable tbody .row.selectedRow td:first-child {
+        box-shadow: none;
+    }
+
+    .postsTable tbody .row.selectedRow {
+        box-shadow: inset 3px 0 0 var(--color-accent);
+    }
+}
+
+/* ── Tema claro ── */
 :global(body.light) .postsTable th {
-  color: #444444;
-  background-color: #EEEEEE;
+    background-color: var(--color-surface-light);
+    color: var(--color-text-muted-light);
 }
 
-:global(body.light) .postsTable tbody tr:nth-child(even) {
-    background-color: #EEE;
+:global(body.light) .thSort:hover {
+    background-color: var(--color-surface-muted-light);
+    color: var(--color-text-light);
 }
 
 :global(body.light) .postsTable td {
-  color: #646464;
+    color: var(--color-text-muted-light);
+}
+
+:global(body.light) .source,
+:global(body.light) .postsTable td.content {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .postsTable tbody .row:hover {
+    background-color: var(--color-bg-light);
+}
+
+:global(body.light) .postsTable tbody .row.selectedRow {
+    background-color: var(--color-accent-soft);
+}
+
+:global(body.light) .message {
+    color: var(--color-text-muted-light);
 }

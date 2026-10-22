@@ -1,96 +1,273 @@
-.posts {
-  margin: 1rem 3rem 0 18rem;
+/* ── Barra de filtros ── */
+.filterBar {
+  margin-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.header {
+/* Com o drawer aberto: busca em linha própria, controles na linha de baixo */
+.filterBarCompact .search {
+  flex-basis: 100%;
+}
+
+.search {
+  flex: 1 1 18rem;
+  min-width: 14rem;
+  height: 2.5rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.welcome h2 {
-  color: var(--color-text);
-  font-size: 1.75rem;
-}
-
-.welcome p {
-  color: var(--color-text-muted);
-}
-
-.postsHeaderIcons {
-  display: flex;
-  gap: 10px;
-}
-
-.postsIcon {
+  gap: 0.5rem;
+  padding: 0 0.9rem;
   background-color: var(--color-surface);
-  padding: 0.25rem;
-  border-radius: var(--radius-sm);
-  font-size: 30px;
-  color: var(--color-text);
-}
-
-.postsInputs {
-  display: flex;
-  margin-top: 1rem;
-}
-
-.postsInputs input {
-  width: 100%;
-  box-sizing: border-box;
-  background-color: var(--color-surface);
-  color: var(--color-text-muted);
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 0.75rem;
+  color: var(--color-text-muted);
 }
 
+.search:focus-within {
+  border-color: var(--color-accent);
+}
+
+/* Seletores reforçados: CreateAlertPopUp define estilos globais para "input" */
+.search input {
+  flex: 1;
+  height: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+/* Relevância como controle segmentado: o estado selecionado fica evidente */
+.segmented {
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.segment {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.8rem;
+  border: none;
+  border-radius: calc(var(--radius-lg) - 4px);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.segment:hover {
+  color: var(--color-text);
+}
+
+.toneHigh::before,
+.toneMedium::before,
+.toneLow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--tone);
+}
+
+.toneHigh {
+  --tone: var(--color-relevance-high);
+}
+
+.toneMedium {
+  --tone: var(--color-relevance-medium);
+}
+
+.toneLow {
+  --tone: var(--color-chart-relevance-low);
+}
+
+.segment.segmentSelected {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Resumo: contador + filtros ativos ── */
+.summary {
+  margin-top: 1rem;
+  min-height: 1.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.count {
+  margin-right: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.activeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.7rem;
+  border-radius: 999px;
+  background-color: var(--color-accent-soft);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.activeChip button {
+  display: inline-flex;
+  padding: 0.15rem;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.activeChip button:hover {
+  color: var(--color-text);
+}
+
+.clearAll {
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.clearAll:hover {
+  text-decoration: underline;
+}
+
+/* ── Tabela e paginação ── */
+/* Sem overflow: o cabeçalho da tabela é sticky em relação à página */
 .postsContainer {
   margin-top: 0.75rem;
+  padding: 0.25rem 1rem 0.5rem;
   background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 1rem;
-  overflow-x: auto;
-}
-
-:global(body.light) .postsInputs input {
-  background-color: var(--color-text);
-}
-
-:global(body.light) .postsContainer {
-  background-color: var(--color-surface-light);
-  box-shadow: var(--shadow-card);
 }
 
 .pagination {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 1rem 0 0.5rem;
-}
-
-.pageBtn {
-  background-color: var(--color-primary, #6558FF);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 0.4rem 1rem;
-  cursor: pointer;
-}
-
-.pageBtn:disabled {
-  opacity: 0.4;
-  cursor: default;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  padding: 0.75rem 0 0.25rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .pageInfo {
+  margin-right: 0.5rem;
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 768px) {
-  .posts {
-    margin: 4rem 1rem 1rem 1rem;
+.pageBtn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ── Tema claro ── */
+:global(body.light) .search,
+:global(body.light) .segmented,
+:global(body.light) .postsContainer {
+  background-color: var(--color-surface-light);
+}
+
+:global(body.light) .postsContainer {
+  box-shadow: var(--shadow-card);
+}
+
+:global(body.light) .search,
+:global(body.light) .segment,
+:global(body.light) .count,
+:global(body.light) .pageInfo {
+  color: var(--color-text-muted-light);
+}
+
+:global(body.light) .search input {
+  background: none;
+  border: none;
+  color: var(--color-text-light);
+}
+
+:global(body.light) .segment:hover,
+:global(body.light) .activeChip {
+  color: var(--color-text-light);
+}
+
+:global(body.light) .segment.segmentSelected {
+  background-color: var(--color-surface-alt-light);
+  color: var(--color-text-light);
+  box-shadow: none;
+}
+
+:global(body.light) .pageBtn {
+  background-color: var(--color-surface-light);
+  color: var(--color-text-light);
+}
+
+/* Abre espaço para o drawer, mantendo a lista visível ao lado.
+   O layout já tem 3rem de margem à direita; o total fica 560px (drawer) + 1.5rem de respiro. */
+@media (min-width: 1280px) {
+  .withDrawer {
+    margin-right: calc(560px - 1.5rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .search {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  /* Relevância ocupa a linha toda, com os quatro segmentos do mesmo tamanho */
+  .segmented {
+    width: 100%;
+  }
+
+  .segment {
+    flex: 1;
+    justify-content: center;
+    padding: 0 0.5rem;
   }
 }

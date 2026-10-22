@@ -1,75 +1,105 @@
-import { useState } from "react";
+import { PiArrowDown, PiCaretRight } from "react-icons/pi";
 import style from "./AllPostsTable.module.css";
-import PostPopUp from "../PostPopUp/PostPopUp";
+import ScorePill from "../ScorePill/ScorePill";
+import SourceBadge from "../SourceBadge/SourceBadge";
+import { cleanText, formatCompactDate, formatDateTime, formatSource } from "../../utils/format";
 
-const SORTABLE_COLUMNS = [
-  { field: "ID", label: "ID" },
-  { field: "SOURCE", label: "Fonte" },
-  { field: "SCORE", label: "Classificação" },
-  { field: "CONTENT", label: "Conteúdo" },
+// sortField: só colunas que servem à análise são ordenáveis
+const COLUMNS = [
+  { key: "id", label: "ID", className: style.colId, hideWhenCompact: true },
+  { key: "date", label: "Data", sortField: "DATE", className: style.colDate },
+  { key: "source", label: "Fonte", className: style.colSource, hideWhenCompact: true },
+  { key: "score", label: "Score", sortField: "SCORE", className: style.colScore },
+  { key: "content", label: "Conteúdo" },
+  { key: "open", label: "", className: style.colOpen },
 ];
 
-export default function AllPostsTable({ posts = [], loading = false, sort, order, onSort }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedPost, setSelectedPost] = useState(null);
+function SortHeader({ label, field, sort, order, onSort }) {
+  const active = sort === field;
+  return (
+    <button
+      type="button"
+      className={style.thSort}
+      onClick={() => onSort(field)}
+      title={active ? `Ordenado por ${label.toLowerCase()} (${order === "ASC" ? "crescente" : "decrescente"})` : `Ordenar por ${label.toLowerCase()}`}
+    >
+      {label}
+      <PiArrowDown
+        className={`${style.arrow} ${active ? style.arrowActive : ""} ${active && order === "ASC" ? style.arrowUp : ""}`}
+        aria-hidden="true"
+      />
+    </button>
+  );
+}
 
-  const handleOpen = (post) => { setSelectedPost(post); setIsOpen(true); };
-  const handleClose = () => { setIsOpen(false); setSelectedPost(null); };
+export default function AllPostsTable({ posts = [], loading = false, sort, order, onSort, selectedId, onSelect, compact = false }) {
+  if (loading) return <p className={style.message}>Carregando...</p>;
+  if (!posts.length) return <p className={style.message}>Nenhum post encontrado.</p>;
 
-  if (loading) return <p style={{ color: "var(--color-text-muted)", padding: "1rem" }}>Carregando...</p>;
-  if (!posts.length) return <p style={{ color: "var(--color-text-muted)", padding: "1rem" }}>Nenhum post encontrado.</p>;
+  const columns = COLUMNS.filter((col) => !(compact && col.hideWhenCompact));
 
   return (
-    <>
-      <table className={style.postsTable}>
-        <thead>
-          <tr>
-            {SORTABLE_COLUMNS.map(({ field, label }) => (
-              <th
-                key={field}
-                className={onSort ? style.sortable : undefined}
-                onClick={() => onSort?.(field)}
-              >
-                {label}
-                <span className={style.sortIndicator}>
-                  <span className={sort === field && order === "ASC" ? style.sortActive : undefined}>▲</span>
-                  <span className={sort === field && order === "DESC" ? style.sortActive : undefined}>▼</span>
-                </span>
-              </th>
-            ))}
-            <th>IoC</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {posts.map((post) => (
-            <tr key={post.id}>
-              <td>{post.id}</td>
-              <td>{post.source}</td>
-              <td>{post.classification?.score?.toFixed(2)}</td>
-              <td>{(post.title ?? post.content)?.slice(0, 60)}...</td>
-              <td>{post.classification?.ioc ? "Sim" : "Não"}</td>
-              <td>
-                <a href="#" onClick={(e) => { e.preventDefault(); handleOpen(post); }}>
-                  Analisar
-                </a>
+    <table className={style.postsTable}>
+      <colgroup>
+        {columns.map((col) => <col key={col.key} className={col.className} />)}
+      </colgroup>
+      <thead>
+        <tr>
+          {columns.map((col) => (
+            <th
+              key={col.key}
+              scope="col"
+              aria-sort={col.sortField && sort === col.sortField ? (order === "ASC" ? "ascending" : "descending") : undefined}
+            >
+              {col.sortField && onSort ? (
+                <SortHeader label={col.label} field={col.sortField} sort={sort} order={order} onSort={onSort} />
+              ) : (
+                col.label
+              )}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {posts.map((post) => {
+          const selected = String(post.id) === String(selectedId);
+          const text = cleanText(post.title ?? post.content);
+
+          return (
+            <tr
+              key={post.id}
+              className={`${style.row} ${selected ? style.selectedRow : ""}`}
+              onClick={() => onSelect?.(post)}
+              aria-selected={selected}
+            >
+              {!compact && <td className={style.id}>{post.id}</td>}
+              <td className={style.date} title={formatDateTime(post.createdAt) ?? undefined}>
+                {formatCompactDate(post.createdAt) ?? "—"}
+              </td>
+              {!compact && (
+                <td className={style.source}>
+                  <span className={style.sourceCell}>
+                    <SourceBadge source={post.source} />
+                    {formatSource(post.source)}
+                  </span>
+                </td>
+              )}
+              <td className={style.score}><ScorePill score={post.classification?.score} /></td>
+              <td className={style.content} title={text}>{text || "Sem conteúdo"}</td>
+              <td className={style.open}>
+                <button
+                  type="button"
+                  className={style.openButton}
+                  onClick={(e) => { e.stopPropagation(); onSelect?.(post); }}
+                  aria-label="Abrir detalhes do post"
+                >
+                  <PiCaretRight aria-hidden="true" />
+                </button>
               </td>
             </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <PostPopUp
-        isOpen={isOpen}
-        onClose={handleClose}
-        id={selectedPost?.id}
-        category={selectedPost?.category ?? "-"}
-        created_at={selectedPost?.createdAt}
-        ioc={selectedPost?.classification?.ioc ? "Sim" : "Não"}
-        keyword="-"
-        relevant={selectedPost?.classification?.relevant ? "Sim" : "Não"}
-        fulltext={selectedPost?.content}
-      />
-    </>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
