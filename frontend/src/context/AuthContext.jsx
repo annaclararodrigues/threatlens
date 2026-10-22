@@ -20,7 +20,9 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     try {
       await authService.logout();
-    } catch {}
+    } catch {
+      // Falha no servidor não impede encerrar a sessão local
+    }
     setUser(null);
     storage.remove(AUTH_USER_KEY);
   }, []);

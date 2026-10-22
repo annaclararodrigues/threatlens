@@ -1,4 +1,3 @@
-import { NavLink } from "react-router-dom";
 import style from "./NavCategory.module.css";
 
 export default function NavCategory({ title, children }) {
