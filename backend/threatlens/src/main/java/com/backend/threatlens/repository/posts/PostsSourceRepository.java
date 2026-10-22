@@ -6,7 +6,9 @@ import com.backend.threatlens.enums.PostSource;
 import com.backend.threatlens.enums.SortBy;
 import com.backend.threatlens.enums.SortOrder;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface PostsSourceRepository {
 
@@ -19,6 +21,9 @@ public interface PostsSourceRepository {
     SourceStats getStats(PostsFilter filter);
 
     List<WordCount> wordFrequencies(PostsFilter filter, int limit);
+
+    // Momento em que a última mensagem desta fonte foi gravada pelo coletor
+    Optional<LocalDateTime> lastCollectedAt();
 
     record SourceStats(long totalPosts, long relevantCount, long lowCount, long mediumCount, long highCount) {}
 

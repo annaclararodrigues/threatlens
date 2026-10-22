@@ -4,6 +4,7 @@ import com.backend.threatlens.dto.request.PostsFilter;
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
 import com.backend.threatlens.dto.request.WordCloudQueryDTO;
+import com.backend.threatlens.dto.response.CollectionStatusDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
 import com.backend.threatlens.dto.response.WordCloudDTO;
 import com.backend.threatlens.dto.response.posts.PostResponse;
@@ -24,6 +25,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -73,6 +75,22 @@ public class PostsService {
 
     private double calculateRelevancePct(long relevantCount, long totalPosts) {
         return totalPosts > 0 ? Math.round((relevantCount * 10000.0 / totalPosts)) / 100.0 : 0.0;
+    }
+
+    public CollectionStatusDTO getCollectionStatus() {
+        List<CollectionStatusDTO.SourceStatus> sourceStatuses = sources.stream()
+                .map(repo -> new CollectionStatusDTO.SourceStatus(
+                        repo.source().name().toLowerCase(),
+                        repo.lastCollectedAt().orElse(null)))
+                .toList();
+
+        LocalDateTime lastCollectedAt = sourceStatuses.stream()
+                .map(CollectionStatusDTO.SourceStatus::lastCollectedAt)
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+
+        return new CollectionStatusDTO(lastCollectedAt, sourceStatuses);
     }
 
     public WordCloudDTO getWordCloud(WordCloudQueryDTO query) {

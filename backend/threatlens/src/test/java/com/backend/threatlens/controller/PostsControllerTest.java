@@ -3,6 +3,7 @@ package com.backend.threatlens.controller;
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
 import com.backend.threatlens.dto.request.WordCloudQueryDTO;
+import com.backend.threatlens.dto.response.CollectionStatusDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
 import com.backend.threatlens.dto.response.WordCloudDTO;
 import com.backend.threatlens.dto.response.posts.PostResponse;
@@ -497,6 +498,35 @@ class PostsControllerTest {
 
                 verify(postsService, org.mockito.Mockito.never()).getWordCloud(any());
             }
+        }
+    }
+
+    // =========================================================================
+    // GET /posts/collection-status
+    // =========================================================================
+
+    @Nested
+    class GetCollectionStatus {
+
+        @Test
+        void returnsLastCollectedAtAndSources() throws Exception {
+            LocalDateTime last = LocalDateTime.of(2026, 10, 22, 10, 30);
+            when(postsService.getCollectionStatus()).thenReturn(new CollectionStatusDTO(
+                    last, List.of(new CollectionStatusDTO.SourceStatus("telegram", last))));
+
+            mockMvc.perform(get("/posts/collection-status"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.lastCollectedAt").value("2026-10-22T10:30:00"))
+                    .andExpect(jsonPath("$.sources[0].sourceName").value("telegram"));
+        }
+
+        @Test
+        void noMessages_returnsNullLastCollectedAt() throws Exception {
+            when(postsService.getCollectionStatus()).thenReturn(new CollectionStatusDTO(null, List.of()));
+
+            mockMvc.perform(get("/posts/collection-status"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.lastCollectedAt").isEmpty());
         }
     }
 

@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Repository
 public class TelegramRepository implements PostsSourceRepository {
@@ -167,6 +168,13 @@ public class TelegramRepository implements PostsSourceRepository {
                 rs.getLong("medium_count"),
                 rs.getLong("high_count")
         ));
+    }
+
+    @Override
+    public Optional<LocalDateTime> lastCollectedAt() {
+        // "createdAt" é a criação da linha pelo coletor, não a data de publicação no Telegram
+        String sql = "SELECT MAX(m.\"createdAt\") FROM telegram_message m";
+        return Optional.ofNullable(jdbcTemplate.queryForObject(sql, Map.of(), LocalDateTime.class));
     }
 
     @Override

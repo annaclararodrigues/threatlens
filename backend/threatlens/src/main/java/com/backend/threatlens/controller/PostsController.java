@@ -3,6 +3,7 @@ package com.backend.threatlens.controller;
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
 import com.backend.threatlens.dto.request.WordCloudQueryDTO;
+import com.backend.threatlens.dto.response.CollectionStatusDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
 import com.backend.threatlens.dto.response.WordCloudDTO;
 import com.backend.threatlens.dto.response.posts.PostsPageResponse;
@@ -30,6 +31,11 @@ public class PostsController {
     @GetMapping("/stats")
     public ResponseEntity<PostStatsDTO> getStats(@Valid @ModelAttribute StatsQueryDTO query) {
         return ResponseEntity.ok(postsService.getStats(query));
+    }
+
+    @GetMapping("/collection-status")
+    public ResponseEntity<CollectionStatusDTO> getCollectionStatus() {
+        return ResponseEntity.ok(postsService.getCollectionStatus());
     }
 
     @GetMapping("/wordcloud")

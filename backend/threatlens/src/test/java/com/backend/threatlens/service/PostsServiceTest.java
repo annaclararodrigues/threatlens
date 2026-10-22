@@ -4,6 +4,7 @@ import com.backend.threatlens.dto.request.PostsFilter;
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
 import com.backend.threatlens.dto.request.WordCloudQueryDTO;
+import com.backend.threatlens.dto.response.CollectionStatusDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
 import com.backend.threatlens.dto.response.WordCloudDTO;
 import com.backend.threatlens.dto.response.posts.ClassificationResponse;
@@ -28,6 +29,7 @@ import org.mockito.quality.Strictness;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -749,6 +751,66 @@ class PostsServiceTest {
             assertThatThrownBy(() -> singleSourceService.getWordCloud(query))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("'from' can not be after 'to'");
+        }
+    }
+
+    // =========================================================================
+    // getCollectionStatus
+    // =========================================================================
+
+    @Nested
+    @MockitoSettings(strictness = Strictness.LENIENT)
+    class GetCollectionStatus {
+
+        @BeforeEach
+        void stubSources() {
+            when(telegramRepo.source()).thenReturn(PostSource.TELEGRAM);
+            when(secondTelegramRepo.source()).thenReturn(PostSource.TELEGRAM);
+        }
+
+        @Test
+        void singleSource_returnsItsLastCollectedAt() {
+            LocalDateTime last = LocalDateTime.of(2026, 10, 22, 10, 30);
+            when(telegramRepo.lastCollectedAt()).thenReturn(Optional.of(last));
+
+            CollectionStatusDTO result = singleSourceService.getCollectionStatus();
+
+            assertThat(result.lastCollectedAt()).isEqualTo(last);
+            assertThat(result.sources()).containsExactly(new CollectionStatusDTO.SourceStatus("telegram", last));
+        }
+
+        @Test
+        void multipleSources_overallIsTheMostRecent() {
+            LocalDateTime older = LocalDateTime.of(2026, 10, 20, 8, 0);
+            LocalDateTime newer = LocalDateTime.of(2026, 10, 22, 10, 30);
+            when(telegramRepo.lastCollectedAt()).thenReturn(Optional.of(older));
+            when(secondTelegramRepo.lastCollectedAt()).thenReturn(Optional.of(newer));
+
+            CollectionStatusDTO result = multiSourceService.getCollectionStatus();
+
+            assertThat(result.lastCollectedAt()).isEqualTo(newer);
+            assertThat(result.sources()).hasSize(2);
+        }
+
+        @Test
+        void sourceWithoutMessages_isIgnoredInOverall() {
+            LocalDateTime last = LocalDateTime.of(2026, 10, 22, 10, 30);
+            when(telegramRepo.lastCollectedAt()).thenReturn(Optional.empty());
+            when(secondTelegramRepo.lastCollectedAt()).thenReturn(Optional.of(last));
+
+            CollectionStatusDTO result = multiSourceService.getCollectionStatus();
+
+            assertThat(result.lastCollectedAt()).isEqualTo(last);
+            assertThat(result.sources().getFirst().lastCollectedAt()).isNull();
+        }
+
+        @Test
+        void noMessagesAtAll_returnsNull() {
+            when(telegramRepo.lastCollectedAt()).thenReturn(Optional.empty());
+
+            CollectionStatusDTO result = singleSourceService.getCollectionStatus();
+
+            assertThat(result.lastCollectedAt()).isNull();
         }
     }
 }
