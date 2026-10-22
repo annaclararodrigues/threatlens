@@ -8,6 +8,7 @@
   padding: 1rem 2rem 0 3rem;
   border-radius: var(--radius-md);
   background-color: var(--color-popup-bg);
+  border: 1px solid var(--color-border);
   color: var(--color-surface-light);
   overflow-y: auto;
 }
@@ -15,11 +16,11 @@
 .alertPopUp::-webkit-scrollbar {
   width: 5px;
   height: 8px;
-  background-color: #aaa;
+  background-color: var(--color-surface);
 }
 
 .alertPopUp::-webkit-scrollbar-thumb {
-  background: #747474;
+  background: var(--color-text-subtle);
 }
 
 .closeIcon {
@@ -66,7 +67,7 @@ input {
   border-radius: var(--radius-sm);
   outline: none;
   resize: none;
-  background-color: #2126317e;
+  background-color: var(--color-bg);
   color: var(--color-surface-light);
   font-size: 14px;
   font-family: inherit;
@@ -117,7 +118,7 @@ input {
 }
 
 .tagsContainer::-webkit-scrollbar-thumb {
-  background: #2b2b2b;
+  background: var(--color-text-subtle);
 }
 
 /* ── Frequência ── */
@@ -139,7 +140,7 @@ input {
   border: none;
   border-radius: var(--radius-sm);
   outline: none;
-  background-color: #2126317e;
+  background-color: var(--color-bg);
   color: var(--color-surface-light);
   font-size: 14px;
   font-family: inherit;
@@ -161,7 +162,7 @@ input {
 
 .datesContainer label {
   font-size: 13px;
-  color: #a8a8a8;
+  color: var(--color-text-muted);
 }
 
 .datesContainer input[type="date"] {
@@ -170,7 +171,8 @@ input {
 
 /* ── Checkbox sem data limite ── */
 .deadlineContainer input[type="date"]:disabled {
-  background-color: #666b75;
+  background-color: var(--color-surface);
+  opacity: 0.5;
 }
 
 .deadlineCheckbox {
@@ -190,7 +192,7 @@ input {
 .deadlineCheckbox label {
   font-size: 14px;
   margin-left: 0.5rem;
-  color: #a8a8a8;
+  color: var(--color-text-muted);
   cursor: pointer;
 }
 
@@ -201,7 +203,7 @@ input {
   margin: 1rem 0 2rem 0;
   border-radius: var(--radius-md);
   background-color: var(--color-accent);
-  color: var(--color-surface-light);
+  color: var(--color-on-accent);
   font-size: 18px;
   border: none;
   cursor: pointer;
@@ -209,7 +211,7 @@ input {
 }
 
 .button:hover {
-  background-color: #5546ff;
+  background-color: var(--color-accent-hover);
 }
 
 /* ── Tema claro ── */
@@ -234,7 +236,7 @@ input {
 }
 
 :global(body.light) .datesContainer label {
-  color: #666;
+  color: var(--color-text-muted-light);
 }
 
 :global(body.light) .container h2 {

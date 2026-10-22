@@ -17,10 +17,10 @@ export default function Alerts() {
     <div className={style.alerts}>
       <Header pageName="Alertas" pageDescription="Crie alertas personalizados."/>
       <div className={style.alertsButtons}>
-        <button onClick={() => setMyAlertsIsOpen(!myAlertsIsOpen)}>
+        <button className={style.secondaryBtn} onClick={() => setMyAlertsIsOpen(!myAlertsIsOpen)}>
           <GoAlert className={style.btnIcon} /> Meus alertas
         </button>
-        <button onClick={() => setCreateAlertIsOpen(!createAlertIsOpen)}>
+        <button className={style.primaryBtn} onClick={() => setCreateAlertIsOpen(!createAlertIsOpen)}>
           <IoIosAddCircleOutline className={style.btnIcon} /> Criar novo alerta
         </button>
       </div>

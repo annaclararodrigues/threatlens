@@ -1,5 +1,6 @@
 .alert {
     background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     width: 50rem;
     height: 12rem;

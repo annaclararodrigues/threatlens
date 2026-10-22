@@ -13,7 +13,8 @@
 }
 
 .inactive {
-  background-color: #2a303d38;
+  background-color: transparent;
+  border: 1px solid var(--color-border);
 }
 
 .alertContent {
@@ -51,11 +52,11 @@
 }
 
 .activeSign {
-  background-color: #58cc4e;
+  background-color: var(--color-success);
 }
 
 .inactiveSign {
-  background-color: #ff2e2e;
+  background-color: var(--color-text-subtle);
 }
 
 .nameContainer {
@@ -109,7 +110,7 @@
 }
 
 :global(body.light) .inactive {
-  background-color: #ccc;
+  background-color: var(--color-surface-alt-light);
 }
 
 :global(body.light) .optionIcon {

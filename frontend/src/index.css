@@ -1,30 +1,57 @@
 :root {
-  /* Backgrounds */
-  --color-bg: #212631;
-  --color-bg-dark: #1a1e27;
-  --color-surface: #2A303D;
-  --color-popup-bg: #202020;
+  /* Backgrounds – dark mode */
+  --color-bg: #0F1117;
+  --color-bg-dark: #0A0C11;
+  --color-surface: #1A1D29;
+  --color-surface-raised: #222634;
+  --color-popup-bg: var(--color-surface-raised);
+  --color-border: rgba(255, 255, 255, 0.06);
 
-  /* Accent */
-  --color-accent: #6558FF;
-  --color-accent-dark: #3D3599;
+  /* Accent – reservado para item ativo, filtro selecionado, links e foco */
+  --color-accent: #7B6CF6;
+  --color-accent-hover: #6A5AE8;
+  --color-accent-soft: rgba(123, 108, 246, 0.14);
+  --color-on-accent: #FFFFFF;
 
   /* Text – dark mode */
-  --color-text: #eee;
-  --color-text-muted: #B0B0B0;
-  --color-text-subtle: #646464;
+  --color-text: #E6E8EE;
+  --color-text-muted: #8A90A2;
+  --color-text-subtle: #5D6375;
 
   /* Light mode */
-  --color-bg-light: #F9F9FB;
+  --color-bg-light: #F7F8FB;
   --color-surface-light: #FFFFFF;
   --color-surface-alt-light: #E6E9F0;
-  --color-surface-muted-light: #EEEEEE;
-  --color-text-light: #1E1E2F;
-  --color-text-muted-light: #5B5B6B;
+  --color-surface-muted-light: #F2F4F7;
+  --color-border-light: #E6E8EF;
+  --color-text-light: #1A1D29;
+  --color-text-muted-light: #667085;
   --color-text-secondary-light: #444444;
 
+  /* Relevância (mesmos limiares do backend: < 0.3 baixa, < 0.7 média) */
+  --color-relevance-low: #667085;
+  --color-relevance-medium: #F79009;
+  --color-relevance-high: #F04438;
+  --color-relevance-low-text: #98A2B3;
+  --color-relevance-medium-text: #FDB022;
+  --color-relevance-high-text: #F97066;
+
+  /* Gráficos */
+  --color-chart-relevance-low: #4F4A9A;
+
+  /* Nuvem de palavras: cor das palavras de menor peso -> maior peso */
+  --color-word-weak: #5D6375;
+  --color-word-strong: #E6E8EE;
+
+  /* Brilho no canto dos cards de KPI */
+  --glow-accent: rgba(123, 108, 246, 0.14);
+  --glow-high: rgba(240, 68, 56, 0.12);
+
+  /* Cores de marca das fontes */
+  --color-source-telegram: #229ED9;
+
   /* Status */
-  --color-danger: #d84747;
+  --color-danger: #F04438;
   --color-success: #3fb872;
 
   /* Shadows */
@@ -57,6 +84,57 @@ body {
 }
 
 body.light {
+  /* Acento um pouco mais escuro que no tema escuro, para manter o contraste no branco */
+  --color-accent: #6D5EF0;
+  --color-accent-hover: #5B4BDB;
+  --color-accent-soft: rgba(109, 94, 240, 0.10);
+
+  /* No claro: borda fina + sombra quase imperceptível (sombra forte faz o card "flutuar") */
+  --color-border: var(--color-border-light);
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
+
+  --color-relevance-low-text: #475467;
+  --color-relevance-medium-text: #B54708;
+  --color-relevance-high-text: #B42318;
+  --color-chart-relevance-low: #A5A0E6;
+  --color-word-weak: #8A90A2;
+  --color-word-strong: #1A1D29;
+  --glow-accent: rgba(109, 94, 240, 0.10);
+  --glow-high: rgba(240, 68, 56, 0.08);
+
   background-color: var(--color-bg-light);
   color: var(--color-text-light);
+}
+
+/* Regras globais herdadas: viviam nos CSS Modules das telas de autenticação e vazavam
+   para o app inteiro. Ficam aqui, iguais, para não mudar o visual das outras páginas. */
+h1 {
+  color: var(--color-text);
+  font-size: 2.5rem;
+}
+
+p {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+a {
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+a:hover {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 425px) {
+  form input {
+    width: 100%;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
