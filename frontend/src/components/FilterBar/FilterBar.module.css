@@ -1,94 +1,107 @@
+/* Mesmo respiro acima (título) e abaixo (cards): a toolbar faz parte do layout, não é um bloco solto */
 .filterContainer {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-.periodBar {
-    background-color: var(--color-surface);
-    height: 2.5rem;
-    border-radius: var(--radius-lg);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    padding: 0 1rem;
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-.periodBar button {
-    background-color: transparent;
-    color: var(--color-text);
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.periodBar button:hover {
-    color: var(--color-text-muted);
-}
-
-.intervalBtn {
-    background-color: var(--color-surface);
-    color: var(--color-text);
-    border: none;
-    border-radius: var(--radius-lg);
-    padding: 0 1rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    font-size: 14px;
+    margin: 1.5rem 0;
+}
+
+/* 40px de altura, igual ao filtro de fonte ao lado; cresce para a toolbar ocupar a largura toda */
+.segmented {
+    flex: 1 1 auto;
+    min-width: 0;
     height: 2.5rem;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.activeBtn {
-    background-color: var(--color-accent) !important;
-    width: 5rem;
-    height: 1.75rem;
-    border-radius: var(--radius-lg);
-}
-
-.intervalBtnActive {
-    composes: intervalBtn;
-    background-color: var(--color-accent) !important;
-}
-
-:global(body.light) .periodBar {
-  background-color: var(--color-surface-muted-light);
-}
-
-:global(body.light) .periodBar button {
-  color: var(--color-text-light);
-}
-
-:global(body.light) .intervalBtn {
-  background-color: var(--color-surface-muted-light);
-  color: var(--color-surface);
-}
-
-:global(body.light) .activeBtn {
-    color: var(--color-text) !important;
-}
-
-@media (max-width: 600px) {
-  .filterContainer {
-    flex-direction: column;
+    display: flex;
+    /* stretch: o wrapper do PeriodPicker ocupa a altura toda, igual aos outros segmentos */
     align-items: stretch;
-  }
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background-color: var(--color-surface);
+}
 
-  .periodBar {
-    gap: 0.25rem;
-    justify-content: space-around;
-  }
-
-  .intervalBtn {
+.segment {
+    flex: 1 1 0;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    padding: 0 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: transparent;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.segment:hover {
+    color: var(--color-text);
+}
+
+/* O seletor personalizado coloca o padding nos próprios botões (ver PeriodPicker compact) */
+.pickerSegment {
+    composes: segment;
+    flex: 0 0 auto;
+    padding: 0;
+}
+
+/* Ativo em roxo suave, o mesmo tratamento do item ativo da sidebar */
+.segmentSelected,
+.segmentSelected:hover {
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent);
+    font-weight: 600;
+}
+
+.divider {
+    align-self: center;
+    width: 1px;
+    height: 1.25rem;
+    background-color: var(--color-border);
+}
+
+:global(body.light) .segmented {
+    background-color: var(--color-surface-light);
+}
+
+:global(body.light) .segment {
+    color: var(--color-text-muted-light);
+}
+
+:global(body.light) .segment:hover {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .segmentSelected,
+:global(body.light) .segmentSelected:hover {
+    color: var(--color-accent);
+}
+
+/* Rótulos por extenso não cabem numa tela estreita: os segmentos quebram linha
+   (overflow com rolagem cortaria o popover do calendário) */
+@media (max-width: 768px) {
+  .filterContainer {
+    flex-wrap: wrap;
+  }
+
+  .segmented {
+    flex-basis: 100%;
+    height: auto;
+    flex-wrap: wrap;
+  }
+
+  .segment {
+    height: 2rem;
+    padding: 0 12px;
+  }
+
+  .pickerSegment {
+    padding: 0;
   }
 }

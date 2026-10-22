@@ -1,19 +1,39 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 import cloud from "d3-cloud";
+import { useNavigate } from "react-router-dom";
 import style from "./WordCloud.module.css";
+import { useTheme } from "../../hooks";
+import { cssVar } from "../../utils/theme";
 
-const WordCloud = ({ palavras }) => {
+const MAX_WORDS = 30;
+const MIN_FONT = 13;
+const MAX_FONT = 34;
+
+// Fragmentos de URL e ruído que não dizem nada ao analista
+const NOISE = new Set(["http", "https", "www", "com", "org", "net", "html", "htm", "php", "amp", "utm", "t.me", "ref"]);
+
+function isNoise(text) {
+  const word = text.toLowerCase();
+  return word.length < 3 || NOISE.has(word) || word.startsWith("utm") || /^\d+$/.test(word);
+}
+
+const WordCloud = ({ palavras, error, linkForWord }) => {
+  const navigate = useNavigate();
+  const isLight = useTheme();
   const svgRef = useRef(null);
+  // Ref para o desenho não depender da identidade da função (evita redesenhar a cada render)
+  const onWordClickRef = useRef(null);
+  onWordClickRef.current = linkForWord ? (word) => navigate(linkForWord(word)) : null;
   const containerRef = useRef(null);
-  const [dimensions, setDimensions] = useState({ width: 600, height: 350 });
+  const [dimensions, setDimensions] = useState(null);
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const w = entry.contentRect.width;
-        if (w > 0) {
-          setDimensions({ width: w, height: Math.max(250, w * 0.45) });
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          setDimensions({ width, height });
         }
       }
     });
@@ -25,19 +45,30 @@ const WordCloud = ({ palavras }) => {
     return () => observer.disconnect();
   }, []);
 
+  const words = useMemo(() => palavras.filter((p) => !isNoise(p.text)).slice(0, MAX_WORDS), [palavras]);
+  const message = error
+    ? "Não foi possível carregar os termos."
+    : words.length === 0 ? "Sem termos suficientes no período." : null;
+
   useEffect(() => {
+    if (!dimensions || message) return;
+
     const { width, height } = dimensions;
-    const maxValue = d3.max(palavras, (d) => d.value) || 1;
+    const maxValue = d3.max(words, (d) => d.value) || 1;
+    const minValue = d3.min(words, (d) => d.value) || 0;
+    const fontScale = d3.scaleSqrt()
+      .domain([minValue, Math.max(maxValue, minValue + 1)])
+      .range([MIN_FONT, MAX_FONT]);
+    // Quanto maior a palavra, mais contraste: evita uma nuvem chapada num tom só
+    const colorScale = d3.scaleLinear()
+      .domain([MIN_FONT, MAX_FONT])
+      .range([cssVar("--color-word-weak"), cssVar("--color-word-strong")])
+      .interpolate(d3.interpolateRgb);
 
     const layout = cloud()
       .size([width, height])
-      .words(
-        palavras.map((p) => ({
-          text: p.text,
-          size: 10 + (p.value / maxValue) * 40,
-        }))
-      )
-      .padding(5)
+      .words(words.map((p) => ({ text: p.text, size: fontScale(p.value) })))
+      .padding(4)
       .rotate(() => 0)
       .font("Arial")
       .fontSize((d) => d.size)
@@ -45,32 +76,38 @@ const WordCloud = ({ palavras }) => {
 
     layout.start();
 
-    function draw(words) {
+    function draw(placed) {
       const svg = d3.select(svgRef.current);
       svg.selectAll("*").remove();
 
       svg
         .attr("viewBox", `0 0 ${width} ${height}`)
-        .attr("preserveAspectRatio", "xMidYMid meet")
         .append("g")
         .attr("transform", `translate(${width / 2}, ${height / 2})`)
         .selectAll("text")
-        .data(words)
+        .data(placed)
         .enter()
         .append("text")
         .attr("class", style.word)
         .attr("text-anchor", "middle")
         .attr("transform", (d) => `translate(${d.x}, ${d.y}) rotate(${d.rotate})`)
+        // Atributo (e não style) para o :hover do CSS continuar valendo
+        .attr("fill", (d) => colorScale(d.size))
         .style("font-size", (d) => `${d.size}px`)
-        .text((d) => d.text);
+        .text((d) => d.text)
+        .on("click", (_event, d) => onWordClickRef.current?.(d.text))
+        .append("title")
+        .text((d) => `Ver posts com "${d.text}"`);
     }
-  }, [palavras, dimensions]);
+
+    return () => layout.stop();
+  }, [words, dimensions, message, isLight]);
 
   return (
     <div className={style.wordCloudContainer}>
       <h2 className={style.description}>Nuvem de palavras</h2>
       <div className={style.wordCloudComponent} ref={containerRef}>
-        <svg ref={svgRef} style={{ width: "100%", height: "auto", display: "block" }} />
+        {message ? <p className={style.empty}>{message}</p> : <svg ref={svgRef} className={style.svg} />}
       </div>
     </div>
   );

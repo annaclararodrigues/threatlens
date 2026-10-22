@@ -1,27 +1,50 @@
 .wordCloudContainer {
     background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    width: 100%;
-    margin-top: 2rem;
-    padding: 2rem;
+    padding: 1.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
 }
 
 .description {
     color: var(--color-text);
-    margin-bottom: 2rem;
-    font-size: 22px;
+    margin-bottom: 1rem;
+    font-size: 18px;
 }
 
 .wordCloudComponent {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}
+
+.empty {
+    position: absolute;
+    inset: 0;
     display: flex;
-    justify-content: center;
     align-items: center;
-    flex-direction: column;
+    justify-content: center;
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
+
+:global(body.light) .empty {
+  color: var(--color-text-muted-light);
+}
+
+.svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 .word {
   font-family: Arial, sans-serif;
-  fill: var(--color-text);
   transition: fill 0.3s;
 }
 
@@ -31,18 +54,10 @@
 }
 
 :global(body.light) .description {
-  color: var(--color-surface);
+  color: var(--color-text-light);
 }
 
 :global(body.light) .wordCloudContainer {
   background-color: var(--color-surface-light);
   box-shadow: var(--shadow-card);
-}
-
-:global(body.light) .word {
-  fill: var(--color-text-subtle);
-}
-
-:global(body.light) .word:hover {
-  fill: var(--color-accent);
 }

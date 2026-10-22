@@ -1,0 +1,8 @@
+.separator {
+    margin: 0 0.5rem;
+}
+
+/* Aviso neutro, não erro: usa o âmbar da relevância média (com variante para o tema claro) */
+.stale {
+    color: var(--color-relevance-medium-text);
+}

@@ -1,107 +1,144 @@
-.description {
-    color: var(--color-text);
-    margin-bottom: 2rem;
-    font-size: 22px;
-}
-
-.tableContainer {
+.listContainer {
     background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
     width: 100%;
     border-radius: var(--radius-lg);
-    padding: 1rem;
+    padding: 1.25rem 1.25rem 0.4rem;
     box-sizing: border-box;
 }
 
-.tableScroll {
-    overflow-x: auto;
-    overflow-y: scroll;
-    scrollbar-color: var(--color-text-subtle) var(--color-bg);
-    height: 16rem;
-    padding-right: 0.5rem;
+.header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 400px;
-}
-
-thead {
+.description {
     color: var(--color-text);
-    background-color: var(--color-bg);
-    height: 3rem;
+    font-size: 18px;
 }
 
-thead th:first-child {
-    border-top-left-radius: var(--radius-md);
-    border-bottom-left-radius: var(--radius-md);
-}
-
-thead th:last-child {
-    border-top-right-radius: var(--radius-md);
-    border-bottom-right-radius: var(--radius-md);
-}
-
-tbody tr {
-    color: var(--color-text-muted);
-    height: 3rem;
-}
-
-td {
-    padding: 0 0.5rem;
-    white-space: nowrap;
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 250px;
-    scrollbar-width: thin;
-    scrollbar-color: #888 transparent;
-}
-
-tbody tr:nth-child(even) {
-    background-color: var(--color-bg);
-}
-
-tbody tr:nth-child(even) td:first-child {
-    border-top-left-radius: var(--radius-md);
-    border-bottom-left-radius: var(--radius-md);
-}
-
-tbody tr:nth-child(even) td:last-child {
-    border-top-right-radius: var(--radius-md);
-    border-bottom-right-radius: var(--radius-md);
-}
-
-table a {
-    text-decoration: none;
+.seeAll {
     color: var(--color-accent);
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
 }
 
-.rate {
-    color: #FF2E2E;
+.seeAll:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
 }
 
-:global(body.light) .tableContainer {
+.empty {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    padding: 2rem 0;
+    text-align: center;
+}
+
+.list {
+    list-style: none;
+}
+
+.list li {
+    margin: 0;
+}
+
+.list li + li {
+    border-top: 1px solid var(--color-border);
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.55rem 0.5rem;
+    margin: 0 -0.5rem;
+    width: calc(100% + 1rem);
+    background: none;
+    border: none;
+    border-radius: var(--radius-md);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.item.itemSelected {
+    background-color: var(--color-accent-soft);
+}
+
+.item:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.item:hover .chevron {
+    color: var(--color-text);
+    transform: translateX(2px);
+}
+
+.body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.title {
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+.tag {
+    padding: 0.05rem 0.4rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.chevron {
+    flex-shrink: 0;
+    color: var(--color-text-subtle);
+    font-size: 1.1rem;
+    transition: color 0.15s, transform 0.15s;
+}
+
+:global(body.light) .listContainer {
   background-color: var(--color-surface-light);
   box-shadow: var(--shadow-card);
 }
 
-:global(body.light) .description {
-  color: var(--color-surface);
+:global(body.light) .description,
+:global(body.light) .title,
+:global(body.light) .tag {
+  color: var(--color-text-light);
 }
 
-:global(body.light) thead {
-  color: var(--color-text-secondary-light);
+:global(body.light) .meta,
+:global(body.light) .empty {
+  color: var(--color-text-muted-light);
+}
+
+:global(body.light) .item:hover {
   background-color: var(--color-surface-muted-light);
-}
-
-:global(body.light) tbody tr:nth-child(even) {
-    background-color: var(--color-surface-muted-light);
-}
-
-:global(body.light) tbody tr {
-    color: var(--color-text-subtle);
-}
-
-:global(body.light) .tableScroll {
-    scrollbar-color: var(--color-surface-muted-light) var(--color-text-muted);
 }

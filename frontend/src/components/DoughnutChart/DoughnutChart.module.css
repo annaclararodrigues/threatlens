@@ -1,28 +1,120 @@
 .doughnutChartContainer {
     background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     width: 100%;
-    padding: 2rem;
+    padding: 1.25rem;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
+    gap: 1.5rem;
 }
 
-.chartWrapper {
-    position: relative;
-    flex: 1;
-    min-height: 0;
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .description {
     color: var(--color-text);
-    margin-bottom: 2rem;
-    text-align: center;
-    font-size: 22px;
+    font-size: 18px;
 }
 
-:global(body.light) .description {
+.subtitle {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.chartWrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+}
+
+.legend {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.legend li {
+    margin: 0;
+}
+
+.legend .legendItem {
+    display: grid;
+    grid-template-columns: auto 3.5rem 3.5rem 1fr 2.5rem;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 -0.5rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    text-decoration: none;
+    transition: background-color 0.15s;
+}
+
+.legend .legendItem:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+:global(body.light) .legend .legendItem:hover {
+    background-color: var(--color-surface-muted-light);
+}
+
+.legendDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.legendLabel {
+    color: var(--color-text-muted);
+}
+
+.legendValue {
+    color: var(--color-text);
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.legendBar {
+    height: 6px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.legendBar span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+}
+
+.legendPct {
+    color: var(--color-text-muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+:global(body.light) .description,
+:global(body.light) .legendValue {
   color: var(--color-text-light);
+}
+
+:global(body.light) .subtitle,
+:global(body.light) .legendLabel,
+:global(body.light) .legendPct {
+  color: var(--color-text-muted-light);
+}
+
+:global(body.light) .legendBar {
+  background-color: rgba(16, 24, 40, 0.08);
 }
 
 :global(body.light) .doughnutChartContainer {
