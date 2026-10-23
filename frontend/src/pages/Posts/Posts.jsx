@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PiCaretLeft, PiCaretRight, PiMagnifyingGlass, PiX } from "react-icons/pi";
+import { PiMagnifyingGlass, PiX } from "react-icons/pi";
 import style from "./Posts.module.css";
 import Header from "../../components/Header/Header";
 import AllPostsTable from "../../components/AllPostsTable/AllPostsTable";
 import PeriodPicker from "../../components/PeriodPicker/PeriodPicker";
+import Pagination from "../../components/Pagination/Pagination";
 import PostDrawer from "../../components/PostDrawer/PostDrawer";
 import SourceFilter from "../../components/SourceFilter/SourceFilter";
 import { formatSource } from "../../utils/sources";
@@ -62,10 +63,16 @@ export default function Posts() {
   // Página volta para 0 sempre que um filtro muda
   const [pageState, setPageState] = useState({ key: filterKey, page: 0 });
   const page = pageState.key === filterKey ? pageState.page : 0;
+  const tableTopRef = useRef(null);
   const setPage = (next) => {
+    if (next === page) return;
     setPageState({ key: filterKey, page: next });
     // Trocar de página também fecha o post aberto, pelo mesmo motivo dos filtros
     if (selectedId) setParam("id", null, { replace: true });
+    // A paginação fica no rodapé: sem isso, a página nova abriria já no fim da lista
+    if (tableTopRef.current?.getBoundingClientRect().top < 0) {
+      tableTopRef.current.scrollIntoView({ block: "start" });
+    }
   };
 
   const { period, from, to } = periodToQuery(filters.period);
@@ -239,7 +246,7 @@ export default function Posts() {
         )}
       </div>
 
-      <div className={style.postsContainer}>
+      <div className={style.postsContainer} ref={tableTopRef}>
         <AllPostsTable
           posts={posts}
           loading={loading}
@@ -256,24 +263,7 @@ export default function Posts() {
             <span className={style.pageInfo}>
               {(page * PAGE_SIZE + 1).toLocaleString("pt-BR")}–{Math.min((page + 1) * PAGE_SIZE, pagination.total).toLocaleString("pt-BR")} de {pagination.total.toLocaleString("pt-BR")}
             </span>
-            <button
-              type="button"
-              className={style.pageBtn}
-              disabled={page === 0}
-              onClick={() => setPage(page - 1)}
-              aria-label="Página anterior"
-            >
-              <PiCaretLeft aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className={style.pageBtn}
-              disabled={page >= pagination.totalPages - 1}
-              onClick={() => setPage(page + 1)}
-              aria-label="Próxima página"
-            >
-              <PiCaretRight aria-hidden="true" />
-            </button>
+            <Pagination page={page} totalPages={pagination.totalPages} onChange={setPage} />
           </div>
         )}
       </div>

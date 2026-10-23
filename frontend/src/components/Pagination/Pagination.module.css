@@ -1,0 +1,129 @@
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pages {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pageBtn {
+  min-width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.pageNumber {
+  padding: 0 0.5rem;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pageCurrent,
+.pageCurrent:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+  cursor: default;
+}
+
+.gap {
+  min-width: 1.25rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.jump {
+  margin-left: 0.5rem;
+}
+
+.jump label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.jump input {
+  width: 4.5rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sem as setas de incremento do input numérico (Chrome/Edge/Safari e Firefox) */
+.jump input::-webkit-outer-spin-button,
+.jump input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.jump input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.jump input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* Em telas estreitas sobram só as setas e a página atual com as vizinhas */
+@media (max-width: 640px) {
+  .jump,
+  .gap {
+    display: none;
+  }
+
+  .pages li:has(.pageNumber:not(.pageCurrent)):first-child,
+  .pages li:has(.pageNumber:not(.pageCurrent)):last-child {
+    display: none;
+  }
+}
+
+/* ── Tema claro ── */
+:global(body.light) .pageBtn,
+:global(body.light) .jump input {
+  background-color: var(--color-surface-light);
+  color: var(--color-text-light);
+}
+
+:global(body.light) .pageCurrent {
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+:global(body.light) .gap,
+:global(body.light) .jump label {
+  color: var(--color-text-muted-light);
+}

@@ -6,5 +6,6 @@ public record PostsPageResponse(
         List<PostResponse> data,
         Pagination pagination
 ) {
-    public record Pagination(int page, int size, long total, int totalPages) {}
+    // total e totalPages são nulos quando a requisição pede includeTotal=false
+    public record Pagination(int page, int size, Long total, Integer totalPages) {}
 }

@@ -157,6 +157,51 @@
     color: var(--color-text-muted);
 }
 
+/* ── Recarregando: linhas atuais esmaecidas + barra fina no topo ── */
+.tableWrapper {
+    position: relative;
+}
+
+.refreshing .postsTable {
+    opacity: 0.55;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+
+.progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    height: 2px;
+    overflow: hidden;
+    border-radius: 999px;
+}
+
+.progress::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 35%;
+    background-color: var(--color-accent);
+    border-radius: inherit;
+    animation: progressSlide 1s ease-in-out infinite;
+}
+
+@keyframes progressSlide {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(290%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .progress::after {
+        width: 100%;
+        animation: none;
+        opacity: 0.6;
+    }
+}
+
 /* ── Celular: cada linha vira um card (score e data em cima, texto embaixo) ──
    A ordenação fica na URL e no padrão (score); o cabeçalho sai por falta de espaço. */
 @media (max-width: 640px) {

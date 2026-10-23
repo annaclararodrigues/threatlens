@@ -32,6 +32,10 @@ public class PostsQueryDTO {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime to;
 
+    // false pula a contagem (total e totalPages vêm nulos): o cliente que já tem o total
+    // dos mesmos filtros e só troca de página não precisa recontar todas as fontes
+    private boolean includeTotal = true;
+
     @Min(0)
     private int page = 0;
 

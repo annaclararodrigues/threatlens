@@ -11,5 +11,6 @@ public record PostStatsDTO(
 
     public record RelevanceDistribution(long lowCount, long mediumCount, long highCount) {}
 
-    public record SourceCount(String sourceName, long postCount) {}
+    // relevantCount: posts de relevância alta da fonte (mesmo critério de Summary.relevantPostsInPeriod)
+    public record SourceCount(String sourceName, long postCount, long relevantCount) {}
 }

@@ -2,6 +2,7 @@ export { useAlerts } from "./useAlerts";
 export { useCollectionStatus } from "./useCollectionStatus";
 export { useDismiss } from "./useDismiss";
 export { useLogoutConfirm } from "./useLogoutConfirm";
+export { usePostReplies } from "./usePostReplies";
 export { usePosts } from "./usePosts";
 export { useStats } from "./useStats";
 export { useTheme } from "./useTheme";

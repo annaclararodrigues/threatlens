@@ -35,6 +35,11 @@
     height: 38px;
   }
 
+  /* Com um post aberto o drawer ocupa a tela e o botão ficaria por cima do cabeçalho dele */
+  :global(body:has([data-post-drawer])) .hamburger {
+    display: none;
+  }
+
   .hamburger span {
     display: block;
     width: 22px;

@@ -125,7 +125,7 @@
 .fields {
     display: grid;
     grid-template-columns: 6.5rem 1fr;
-    row-gap: 0.6rem;
+    row-gap: 0.85rem;
     column-gap: 0.75rem;
     font-size: 14px;
 }
@@ -164,6 +164,55 @@
     font-size: 12px;
 }
 
+/* O texto do rótulo fica na mesma linha de base do primeiro chip */
+.detailsToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.9rem;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-accent);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.detailsToggle:hover {
+    text-decoration: underline;
+}
+
+/* O rótulo fica igual ao dos outros campos, e os chips começam no topo da linha, rente a ele
+   (sem centralizar um no outro); chips que quebram descem a partir dali. */
+.chipsRow > * {
+    align-self: start;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background-color: rgba(255, 255, 255, 0.04);
+    color: var(--color-text);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
 .scoreRow {
     display: flex;
     align-items: center;
@@ -188,6 +237,15 @@
 }
 
 /* ── Mensagem original: conteúdo bruto da fonte, com cara de citação ── */
+.messageTitle {
+    margin: 0 0 0.5rem;
+    color: var(--color-text);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
 .message {
     margin: 0;
     padding: 0.85rem 1rem;
@@ -199,28 +257,6 @@
     line-height: 1.6;
     white-space: pre-line;
     overflow-wrap: anywhere;
-}
-
-.messageCollapsed {
-    display: -webkit-box;
-    -webkit-line-clamp: 8;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.toggle {
-    margin-top: 0.5rem;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--color-accent);
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.toggle:hover {
-    text-decoration: underline;
 }
 
 /* ── Rodapé ── */
@@ -253,16 +289,45 @@
 }
 
 .postId {
-    margin-left: auto;
-    color: var(--color-text-subtle);
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
     font-variant-numeric: tabular-nums;
+}
+
+.copyInline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.copyInline:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--color-text);
+}
+
+:global(body.light) .copyInline:hover {
+    background-color: var(--color-surface-muted-light);
+    color: var(--color-text-light);
 }
 
 /* ── Tema claro ── */
 :global(body.light) .drawer {
     background-color: var(--color-surface-light);
     box-shadow: -16px 0 40px rgba(16, 24, 40, 0.12);
+}
+
+:global(body.light) .chip {
+    background-color: var(--color-bg-light);
 }
 
 :global(body.light) .fields dd,

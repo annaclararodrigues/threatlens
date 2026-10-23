@@ -13,6 +13,14 @@
     --source-color: var(--color-source-telegram);
 }
 
+.forum {
+    --source-color: var(--color-source-forum);
+}
+
+.qa {
+    --source-color: var(--color-source-qa);
+}
+
 .generic {
     --source-color: var(--color-text-subtle);
 }
