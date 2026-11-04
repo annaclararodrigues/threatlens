@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="code-box(code)">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+        <tr>
+            <th:block th:each="digit, it : ${code.toCharArray()}">
+                <td th:unless="${it.first}" width="10" style="width:10px; font-size:0; line-height:0;">&nbsp;</td>
+                <td align="center" valign="middle" width="52" height="56" th:text="${digit}"
+                    style="width:52px; height:56px; background-color:#FFFFFF; border:1px solid #E6E8EF; border-radius:10px; font-size:22px; line-height:56px; font-weight:600; color:#1A1D29;">0</td>
+            </th:block>
+        </tr>
+    </table>
+    <p style="margin:16px 0 32px; text-align:center; font-size:13px; line-height:20px; color:#6B6B76;">
+        O código expira em 10 minutos.
+    </p>
+</th:block>
+
+<th:block th:fragment="notice(text)">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td style="border-top:1px solid #E6E6EB; padding-top:20px; font-size:13px; line-height:20px; color:#8A8A94;" th:text="${text}">
+                Aviso
+            </td>
+        </tr>
+    </table>
+</th:block>
+
+</body>
+</html>

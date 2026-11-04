@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{email/layout :: layout(title='Confirme seu e-mail', content=~{::content})}">
+<body>
+<th:block th:fragment="content">
+    <p style="margin:0 0 8px; font-size:15px; line-height:24px; color:#3A3A44;">Olá!</p>
+    <p style="margin:0 0 28px; font-size:15px; line-height:24px; color:#3A3A44;">
+        Use o código abaixo para ativar sua conta no ThreatLens.
+    </p>
+    <th:block th:replace="~{email/fragments :: code-box(${code})}"></th:block>
+    <th:block th:replace="~{email/fragments :: notice('Não foi você? Ignore este e-mail. Nenhuma conta será ativada sem este código.')}"></th:block>
+</th:block>
+</body>
+</html>
