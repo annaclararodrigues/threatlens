@@ -71,8 +71,12 @@ export function isAllTime(value) {
 }
 
 // Parâmetros no formato que os hooks/API esperam
+// O backend filtra com "<= to" e o PostgreSQL guarda microssegundos: terminar em 23:59:59
+// deixaria de fora posts do último segundo do dia (ex.: 23:59:59.5)
+const END_OF_SECOND = ".999999";
+
 export function periodToQuery(value) {
-  if (value.from) return { from: `${value.from}T00:00:00`, to: `${value.to}T23:59:59` };
+  if (value.from) return { from: `${value.from}T00:00:00`, to: `${value.to}T23:59:59${END_OF_SECOND}` };
   return { period: value.period };
 }
 
@@ -132,7 +136,7 @@ export function previousWindow(value) {
     const length = end - start + 1000;
     return {
       from: toLocalIso(new Date(start - length)),
-      to: toLocalIso(new Date(start - 1000)),
+      to: toLocalIso(new Date(start - 1000)) + END_OF_SECOND,
       label: "período anterior",
     };
   }

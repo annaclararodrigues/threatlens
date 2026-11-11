@@ -195,6 +195,23 @@ class PostsControllerTest {
                 assertThat(captor.getValue().getPeriod()).isEqualTo(StatsPeriod.WEEK);
             }
 
+            // O front envia o fim do intervalo com microssegundos, para incluir o último segundo do dia
+            @Test
+            void toWithFractionalSeconds_bindsToTheMicrosecond() throws Exception {
+                when(postsService.getPosts(any())).thenReturn(emptyPage());
+
+                mockMvc.perform(get("/posts")
+                                .param("from", "2026-10-01T00:00:00")
+                                .param("to", "2026-10-15T23:59:59.999999"))
+                        .andExpect(status().isOk());
+
+                ArgumentCaptor<PostsQueryDTO> captor = ArgumentCaptor.forClass(PostsQueryDTO.class);
+                verify(postsService).getPosts(captor.capture());
+
+                assertThat(captor.getValue().getTo())
+                        .isEqualTo(java.time.LocalDateTime.of(2026, 10, 15, 23, 59, 59, 999_999_000));
+            }
+
             @Test
             void categoryParam_bindsAsString() throws Exception {
                 when(postsService.getPosts(any())).thenReturn(emptyPage());
