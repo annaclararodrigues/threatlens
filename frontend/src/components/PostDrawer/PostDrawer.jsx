@@ -6,22 +6,14 @@ import ExpandableText from "../ExpandableText/ExpandableText";
 import PostReplies from "./PostReplies";
 import { hasReplies, usePostReplies } from "../../hooks/usePostReplies";
 import { RELEVANCE_LEVELS, formatScore, getRelevanceLevel } from "../../utils/relevance";
-import { formatDateTime, formatSource } from "../../utils/format";
-import { safeExternalUrl, sourceMetaEntries, splitCategories, stripEmojis } from "../../utils/entities";
+import { formatDateTime, formatSource, telegramChannel } from "../../utils/format";
+import { safeExternalUrl, sourceMetaEntries, splitCategories, stripEmojis } from "../../utils/postContent";
 
 const TONE_CLASS = {
   LOW: style.toneLow,
   MEDIUM: style.toneMedium,
   HIGH: style.toneHigh,
 };
-
-function channelInfo(meta) {
-  const username = meta?.channel_username?.replace(/^@+/, "");
-  return {
-    label: username ? `@${username}` : meta?.channel_name ?? null,
-    url: username ? `https://t.me/${username}` : null,
-  };
-}
 
 function CopyButton({ value, label = "Copiar", className, showLabel = false }) {
   const [copied, setCopied] = useState(false);
@@ -128,7 +120,7 @@ export default function PostDrawer({ post, onClose, onPrev, onNext }) {
   const score = classification?.score;
   const level = getRelevanceLevel(score);
   const tone = TONE_CLASS[level ?? "LOW"];
-  const channel = channelInfo(post.meta);
+  const channel = telegramChannel(post.meta);
   const published = formatDateTime(post.createdAt);
   const classifiedAt = formatDateTime(classification?.classifiedAt);
   const meta = sourceMetaEntries(post.meta);

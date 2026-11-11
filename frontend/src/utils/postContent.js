@@ -1,6 +1,7 @@
 // Tratamento do texto e dos metadados de fonte de um post
 
-const EMOJI_RE = /[\p{Extended_Pictographic}\uFE0F\u200D]/gu;
+// Emojis, o seletor de varia\u00E7\u00E3o (FE0F) e o "joiner" (200D) que os combina
+export const EMOJI_RE = /[\p{Extended_Pictographic}\uFE0F\u200D]/gu;
 
 // Remove emojis mas mantém as quebras de linha (para a mensagem original)
 export function stripEmojis(text) {

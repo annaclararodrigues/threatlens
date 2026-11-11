@@ -3,7 +3,7 @@ import { PiArrowBendDownRight, PiArrowFatUp, PiChatCircle, PiThumbsDown, PiThumb
 import style from "./PostReplies.module.css";
 import ExpandableText from "../ExpandableText/ExpandableText";
 import { formatDateTime } from "../../utils/format";
-import { stripEmojis } from "../../utils/entities";
+import { stripEmojis } from "../../utils/postContent";
 
 // Listas longas abrem parciais
 const ANSWERS_PAGE = 5;

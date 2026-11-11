@@ -1,12 +1,13 @@
 import { formatSource } from "./sources";
+import { EMOJI_RE } from "./postContent";
 
 export { formatSource };
 
-// Remove emojis e normaliza espaços (apenas para exibição)
+// Remove emojis e junta tudo numa linha (para listas); o drawer usa stripEmojis, que mantém as quebras
 export function cleanText(text) {
   if (!text) return "";
   return text
-    .replace(/[\p{Extended_Pictographic}️‍]/gu, "")
+    .replace(EMOJI_RE, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -37,17 +38,20 @@ export function formatCompactDate(isoDate) {
   return `${day} ${time}`;
 }
 
-// "@canal" a partir do meta da fonte (o username pode vir com ou sem "@")
-export function channelLabel(meta) {
+// Canal do Telegram a partir do meta da fonte: rótulo "@canal" (o username pode vir com ou sem "@")
+// e link para o t.me; sem username, o rótulo é o nome do canal e não há link
+export function telegramChannel(meta) {
   const username = meta?.channel_username?.replace(/^@+/, "");
-  if (username) return `@${username}`;
-  return meta?.channel_name ?? null;
+  return {
+    label: username ? `@${username}` : meta?.channel_name ?? null,
+    url: username ? `https://t.me/${username}` : null,
+  };
 }
 
 // Origem do post: "Telegram – @canal" ou "Raddle – fórum"; sem canal/fórum mostra só o nome da fonte
 export function postOrigin(post) {
   const source = post?.source ? formatSource(post.source) : null;
-  const channel = channelLabel(post?.meta) ?? post?.meta?.forum ?? null;
+  const channel = telegramChannel(post?.meta).label ?? post?.meta?.forum ?? null;
   if (source && channel) return `${source} – ${channel}`;
   return source ?? channel;
 }
