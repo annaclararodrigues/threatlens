@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR" th:fragment="layout(title, content)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light only">
+    <meta name="supported-color-schemes" content="light">
+    <title th:text="${title}">ThreatLens</title>
+</head>
+<body style="margin:0; padding:0; background-color:#F5F5F7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#111216;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F5F5F7;">
+    <tr>
+        <td align="center" style="padding:40px 16px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+                <tr>
+                    <td align="center" style="padding-bottom:28px;">
+                        <img src="cid:logo" width="200" height="50" alt="ThreatLens" style="display:block; border:0; outline:none; text-decoration:none;">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="background-color:#FFFFFF; border:1px solid #E6E6EB; border-radius:12px; padding:40px 36px;">
+                        <h1 th:text="${title}" style="margin:0 0 16px; font-size:22px; line-height:30px; font-weight:700; color:#111216;">Título</h1>
+                        <th:block th:replace="${content}"></th:block>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding-top:24px; font-size:12px; line-height:18px; color:#8A8A94;">
+                        ThreatLens 2026
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

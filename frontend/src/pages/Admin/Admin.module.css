@@ -1,9 +1,59 @@
-.admin {
-    margin: 1rem 3rem 0 18rem;
+.content {
+    margin-top: 2rem;
 }
 
-.content {
-    margin-top: 4rem;
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.count {
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Mesmo padrão do segmented de período do dashboard */
+.segmented {
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: stretch;
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background-color: var(--color-surface);
+}
+
+.segment {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 12px;
+    border: none;
+    border-radius: 7px;
+    background-color: transparent;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.segment:hover {
+    color: var(--color-text);
+}
+
+.segmentSelected,
+.segmentSelected:hover {
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent);
+    font-weight: 600;
 }
 
 .message {
@@ -16,63 +66,136 @@
     font-size: 0.95rem;
 }
 
-.grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    max-width: 600px;
+.tableCard {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    /* O menu ⋯ abre para fora da tabela; por isso sem overflow: hidden */
 }
 
-.card {
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.table td {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+    vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.userCell {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    background-color: var(--color-surface);
-    border-radius: var(--radius-md);
-    padding: 1rem 1.25rem;
+    gap: 0.75rem;
 }
 
-.cardInfo {
+.userInfo {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.15rem;
 }
 
 .name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--color-text);
-    font-size: 0.95rem;
     font-weight: 500;
+}
+
+.selfBadge {
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent);
+    font-size: 11px;
+    font-weight: 600;
 }
 
 .email {
     color: var(--color-text-muted);
-    font-size: 0.85rem;
+    font-size: 13px;
+    overflow-wrap: anywhere;
 }
 
-.deleteBtn {
-    flex-shrink: 0;
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0;
+.status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.status::before {
+    content: "";
+    width: 0.45rem;
+    height: 0.45rem;
     border-radius: 50%;
-    background-color: transparent;
-    color: var(--color-text-muted);
-    border: none;
-    display: flex;
+    background-color: currentColor;
+}
+
+.verified {
+    color: var(--color-success);
+}
+
+.pending {
+    color: var(--color-relevance-medium-text);
+}
+
+.actionsCell {
+    width: 3.5rem;
+    text-align: right;
+}
+
+.menuBtn {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
     cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.deleteBtn:hover:not(:disabled) {
-    background-color: var(--color-danger);
-    color: #fff;
+.menuBtn:hover,
+.menuBtn[aria-expanded="true"] {
+    border-color: var(--color-border);
+    color: var(--color-text);
 }
 
-.deleteBtn:disabled {
-    opacity: 0.4;
-    cursor: default;
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
 }
 
 .pagination {
@@ -81,16 +204,19 @@
     justify-content: center;
     gap: 1rem;
     padding: 1rem 0 0.5rem;
-    max-width: 600px;
 }
 
 .pageBtn {
-    background-color: var(--color-accent);
-    color: #fff;
-    border: none;
+    background-color: var(--color-surface-raised);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     padding: 0.4rem 1rem;
     cursor: pointer;
+}
+
+.pageBtn:hover:not(:disabled) {
+    border-color: var(--color-accent);
 }
 
 .pageBtn:disabled {
@@ -104,21 +230,52 @@
 }
 
 /* Light mode */
-:global(body.light) .card {
+:global(body.light) .segmented {
     background-color: var(--color-surface-light);
-    box-shadow: var(--shadow-card);
 }
 
-:global(body.light) .name {
-    color: var(--color-text-light);
-}
-
-:global(body.light) .email {
+:global(body.light) .segment {
     color: var(--color-text-muted-light);
 }
 
+:global(body.light) .segment:hover {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .segmentSelected,
+:global(body.light) .segmentSelected:hover {
+    color: var(--color-accent);
+}
+
+:global(body.light) .pageBtn,
+:global(body.light) .tableCard {
+    background-color: var(--color-surface-light);
+}
+
+:global(body.light) .pageBtn,
+:global(body.light) .count,
+:global(body.light) .name,
+:global(body.light) .table td {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .table th,
+:global(body.light) .email,
+:global(body.light) .message,
+:global(body.light) .pageInfo,
+:global(body.light) .menuBtn {
+    color: var(--color-text-muted-light);
+}
+
+:global(body.light) .menuBtn:hover,
+:global(body.light) .menuBtn[aria-expanded="true"] {
+    color: var(--color-text-light);
+}
+
 @media (max-width: 768px) {
-    .admin {
-        margin: 4rem 1rem 1rem 1rem;
+    /* Status é o menos importante; sai em tela estreita (sem rolagem, que cortaria o menu ⋯) */
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        display: none;
     }
 }

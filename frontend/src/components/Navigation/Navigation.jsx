@@ -5,17 +5,12 @@ import { AiOutlineHome } from "react-icons/ai";
 import { PiChatCenteredDots } from "react-icons/pi";
 import { CiUser, CiLogout } from "react-icons/ci";
 import { MdAdminPanelSettings } from "react-icons/md";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useLogoutConfirm } from "../../hooks";
 
 export default function Navigation() {
-  const navigate = useNavigate();
-  const { logout, user } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login", { replace: true });
-  };
+  const { user } = useAuth();
+  const { requestLogout, logoutModal } = useLogoutConfirm();
 
   return (
     <nav className={style.navigation}>
@@ -37,12 +32,13 @@ export default function Navigation() {
           />
         )}
         <li>
-          <button className={style.logoutBtn} onClick={handleLogout}>
+          <button className={style.logoutBtn} onClick={requestLogout}>
             <CiLogout size={20} className={style.navIcon} />
             Logout
           </button>
         </li>
       </NavCategory>
+      {logoutModal}
     </nav>
   );
 }

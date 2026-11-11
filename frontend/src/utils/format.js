@@ -1,0 +1,89 @@
+import { formatSource } from "./sources";
+import { EMOJI_RE } from "./postContent";
+
+export { formatSource };
+
+// Remove emojis e junta tudo numa linha (para listas); o drawer usa stripEmojis, que mantém as quebras
+export function cleanText(text) {
+  if (!text) return "";
+  return text
+    .replace(EMOJI_RE, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const relativeFormatter = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
+
+// Acima disso a data relativa ("ano passado") deixa de ajudar; mostramos a data absoluta
+const ABSOLUTE_AFTER_SECONDS = 7 * 24 * 60 * 60;
+
+const RELATIVE_UNITS = [
+  ["day", 24 * 60 * 60],
+  ["hour", 60 * 60],
+  ["minute", 60],
+];
+
+// "24/04 18:47"; o ano (2 dígitos) só aparece se for diferente do atual: "24/04/25 18:47"
+export function formatCompactDate(isoDate) {
+  if (!isoDate) return null;
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return null;
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  const day = date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    ...(sameYear ? {} : { year: "2-digit" }),
+  });
+  const time = date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return `${day} ${time}`;
+}
+
+// Canal do Telegram a partir do meta da fonte: rótulo "@canal" (o username pode vir com ou sem "@")
+// e link para o t.me; sem username, o rótulo é o nome do canal e não há link
+export function telegramChannel(meta) {
+  const username = meta?.channel_username?.replace(/^@+/, "");
+  return {
+    label: username ? `@${username}` : meta?.channel_name ?? null,
+    url: username ? `https://t.me/${username}` : null,
+  };
+}
+
+// Origem do post: "Telegram – @canal" ou "Raddle – fórum"; sem canal/fórum mostra só o nome da fonte
+export function postOrigin(post) {
+  const source = post?.source ? formatSource(post.source) : null;
+  const channel = telegramChannel(post?.meta).label ?? post?.meta?.forum ?? null;
+  if (source && channel) return `${source} – ${channel}`;
+  return source ?? channel;
+}
+
+// O id da API vem prefixado com a fonte ("nulledbb:42", "ha:english:7"); nas listas,
+// onde a fonte já aparece ao lado, basta o número
+export function shortPostId(id) {
+  if (id == null) return "";
+  const text = String(id);
+  return text.slice(text.lastIndexOf(":") + 1);
+}
+
+export function formatDateTime(isoDate) {
+  if (!isoDate) return null;
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+export function formatRelativeTime(isoDate) {
+  if (!isoDate) return null;
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return null;
+
+  // Datas no futuro (relógios dessincronizados) contam como "agora"
+  const seconds = Math.min(0, Math.round((date.getTime() - Date.now()) / 1000));
+  if (-seconds >= ABSOLUTE_AFTER_SECONDS) return date.toLocaleDateString("pt-BR");
+
+  for (const [unit, unitSeconds] of RELATIVE_UNITS) {
+    if (Math.abs(seconds) >= unitSeconds) {
+      return relativeFormatter.format(Math.round(seconds / unitSeconds), unit);
+    }
+  }
+  return "agora";
+}

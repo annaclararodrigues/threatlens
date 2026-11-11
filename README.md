@@ -166,7 +166,6 @@ Em outro terminal, a partir da raiz do repositório:
 ```bash
 cd frontend
 npm install
-cp .env.example .env
 npm run dev
 ```
 

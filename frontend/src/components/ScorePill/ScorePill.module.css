@@ -1,0 +1,35 @@
+.pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 3.25rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background-color: color-mix(in srgb, var(--tone) 16%, transparent);
+    color: var(--tone-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.toneHigh {
+    --tone: var(--color-relevance-high);
+    --tone-text: var(--color-relevance-high-text);
+}
+
+.toneMedium {
+    --tone: var(--color-relevance-medium);
+    --tone-text: var(--color-relevance-medium-text);
+}
+
+.toneLow {
+    --tone: var(--color-relevance-low);
+    --tone-text: var(--color-relevance-low-text);
+}
+
+.empty {
+    --tone: transparent;
+    --tone-text: var(--color-text-subtle);
+}

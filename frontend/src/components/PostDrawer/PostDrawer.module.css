@@ -1,0 +1,362 @@
+.drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: calc(var(--z-overlay) + 1);
+    width: min(560px, 100vw);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-surface-raised);
+    border-left: 1px solid var(--color-border);
+    box-shadow: -16px 0 40px rgba(0, 0, 0, 0.35);
+    animation: slideIn 200ms ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(24px);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .drawer {
+        animation: none;
+    }
+}
+
+/* ── Cabeçalho ── */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.headerInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.meta {
+    color: var(--color-text-muted);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.headerActions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.headerActions button {
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.headerActions button:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--color-text);
+}
+
+.headerActions button:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+/* Cor da faixa de relevância (Alta = vermelho), igual à lista e ao donut */
+.toneHigh {
+    --tone: var(--color-relevance-high);
+    --tone-text: var(--color-relevance-high-text);
+}
+
+.toneMedium {
+    --tone: var(--color-relevance-medium);
+    --tone-text: var(--color-relevance-medium-text);
+}
+
+.toneLow {
+    --tone: var(--color-relevance-low);
+    --tone-text: var(--color-relevance-low-text);
+}
+
+/* ── Corpo ── */
+.scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 1.25rem 1.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.section {
+    padding: 1.1rem 0;
+}
+
+.section + .section {
+    border-top: 1px solid var(--color-border);
+}
+
+.sectionTitle {
+    margin-bottom: 0.75rem;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.fields {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    row-gap: 0.85rem;
+    column-gap: 0.75rem;
+    font-size: 14px;
+}
+
+.fieldRow {
+    display: contents;
+}
+
+.fields dt {
+    padding-top: 0.1rem;
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+.fields dd {
+    min-width: 0;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.fields dd a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--color-accent);
+    text-decoration: none;
+}
+
+.fields dd a:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+}
+
+.hint {
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+/* O texto do rótulo fica na mesma linha de base do primeiro chip */
+.detailsToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.9rem;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-accent);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.detailsToggle:hover {
+    text-decoration: underline;
+}
+
+/* O rótulo fica igual ao dos outros campos, e os chips começam no topo da linha, rente a ele
+   (sem centralizar um no outro); chips que quebram descem a partir dali. */
+.chipsRow > * {
+    align-self: start;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background-color: rgba(255, 255, 255, 0.04);
+    color: var(--color-text);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.scoreRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.scoreTrack {
+    width: 8rem;
+    height: 6px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.scoreTrack span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background-color: var(--tone);
+}
+
+/* ── Mensagem original: conteúdo bruto da fonte, com cara de citação ── */
+.messageTitle {
+    margin: 0 0 0.5rem;
+    color: var(--color-text);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.message {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    border-left: 3px solid var(--color-border);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--color-text);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+/* ── Rodapé ── */
+.footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.action:hover {
+    color: var(--color-text);
+    border-color: var(--color-accent);
+}
+
+.postId {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.copyInline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.copyInline:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--color-text);
+}
+
+:global(body.light) .copyInline:hover {
+    background-color: var(--color-surface-muted-light);
+    color: var(--color-text-light);
+}
+
+/* ── Tema claro ── */
+:global(body.light) .drawer {
+    background-color: var(--color-surface-light);
+    box-shadow: -16px 0 40px rgba(16, 24, 40, 0.12);
+}
+
+:global(body.light) .chip {
+    background-color: var(--color-bg-light);
+}
+
+:global(body.light) .fields dd,
+:global(body.light) .message,
+:global(body.light) .action {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .meta,
+:global(body.light) .sectionTitle,
+:global(body.light) .fields dt,
+:global(body.light) .hint {
+    color: var(--color-text-muted-light);
+}
+
+:global(body.light) .message {
+    background-color: var(--color-bg-light);
+    border-left-color: var(--color-surface-alt-light);
+}
+
+:global(body.light) .action {
+    background-color: var(--color-surface-light);
+}
+
+:global(body.light) .headerActions button:hover:not(:disabled) {
+    background-color: var(--color-surface-muted-light);
+    color: var(--color-text-light);
+}
+
+:global(body.light) .scoreTrack {
+    background-color: rgba(16, 24, 40, 0.08);
+}

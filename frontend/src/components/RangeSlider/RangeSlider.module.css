@@ -37,7 +37,7 @@
 .track {
   top: 0;
   bottom: 0;
-  background: #202328;
+  background: var(--color-bg);
   border-radius: var(--radius-sm);
 }
 

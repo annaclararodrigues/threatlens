@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import style from "./ConfirmModal.module.css";
 
 export default function ConfirmModal({
@@ -12,7 +13,8 @@ export default function ConfirmModal({
 }) {
   if (!isOpen) return null;
 
-  return (
+  // Portal no body: dentro da sidebar (fixed + transform no mobile) o modal ficaria preso a ela
+  return createPortal(
     <>
       <div className={style.overlay} onClick={onCancel} />
       <div className={style.modal} role="dialog" aria-modal="true">
@@ -27,6 +29,7 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }

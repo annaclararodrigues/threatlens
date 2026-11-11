@@ -1,73 +1,41 @@
 import style from "./FilterBar.module.css";
-import { useState } from "react";
-import { MdFilterList } from "react-icons/md";
-import DateRangePopUp from "../DateRangePopUp/DateRangePopUp";
+import PeriodPicker from "../PeriodPicker/PeriodPicker";
+import SourceFilter from "../SourceFilter/SourceFilter";
+import { PERIOD_SHORTCUTS, isCustomPeriod } from "../../utils/filters";
 
-export default function FilterBar({ activeFilter, setFilter, dateRange, onRangeApply, onRangeClear }) {
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
-
-  const hasCustomRange = Boolean(dateRange?.from || dateRange?.to);
-
-  const handleApply = (range) => {
-    onRangeApply(range);
-    setIsPopupOpen(false);
-  };
-
-  const handleClear = () => {
-    onRangeClear();
-    setIsPopupOpen(false);
-  };
+// Toolbar do dashboard: período (ocupa o espaço livre) e fonte, na largura toda
+export default function FilterBar({ value, onChange, sources, onSourcesChange }) {
+  const custom = isCustomPeriod(value);
 
   return (
     <div className={style.filterContainer}>
-      <span className={style.periodBar}>
-        <button
-          onClick={() => setFilter("Dia")}
-          className={!hasCustomRange && activeFilter === "Dia" ? style.activeBtn : ""}
-        >
-          Dia
-        </button>
-        <button
-          onClick={() => setFilter("Semana")}
-          className={!hasCustomRange && activeFilter === "Semana" ? style.activeBtn : ""}
-        >
-          Semana
-        </button>
-        <button
-          onClick={() => setFilter("Mês")}
-          className={!hasCustomRange && activeFilter === "Mês" ? style.activeBtn : ""}
-        >
-          Mês
-        </button>
-        <button
-          onClick={() => setFilter("Ano")}
-          className={!hasCustomRange && activeFilter === "Ano" ? style.activeBtn : ""}
-        >
-          Ano
-        </button>
-        <button
-          onClick={() => setFilter("Tudo")}
-          className={!hasCustomRange && activeFilter === "Tudo" ? style.activeBtn : ""}
-        >
-          Tudo
-        </button>
-      </span>
-      <button
-        className={hasCustomRange ? style.intervalBtnActive : style.intervalBtn}
-        onClick={() => setIsPopupOpen(true)}
-      >
-        <MdFilterList size={23} />
-        Filtrar período
-      </button>
-
-      <DateRangePopUp
-        isOpen={isPopupOpen}
-        onClose={() => setIsPopupOpen(false)}
-        onApply={handleApply}
-        onClear={handleClear}
-        initialFrom={dateRange?.from ?? ""}
-        initialTo={dateRange?.to ?? ""}
-      />
+      <div className={style.segmented} role="group" aria-label="Período">
+        {PERIOD_SHORTCUTS.map((shortcut) => {
+          const selected = !custom && value.period === shortcut.value;
+          return (
+            <button
+              key={shortcut.value}
+              type="button"
+              className={`${style.segment} ${selected ? style.segmentSelected : ""}`}
+              aria-pressed={selected}
+              title={shortcut.label}
+              onClick={() => onChange({ period: shortcut.value })}
+            >
+              {shortcut.segment}
+            </button>
+          );
+        })}
+        <span className={style.divider} aria-hidden="true" />
+        <PeriodPicker
+          value={value}
+          onChange={onChange}
+          align="left"
+          compact
+          className={style.pickerSegment}
+          activeClassName={style.segmentSelected}
+        />
+      </div>
+      <SourceFilter value={sources} onChange={onSourcesChange} align="right" />
     </div>
   );
 }

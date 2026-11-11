@@ -1,77 +1,90 @@
-.myAccount {
-    margin: 1rem 3rem 0 18rem;
-}
-
-.myAccountContainer {
-    width: 50%;
-}
-
-.myAccountForm {
+/* Largura máxima: o conteúdo não fica solto à esquerda com a tela vazia */
+.cards {
+    max-width: 640px;
+    margin-top: 2rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    margin-top: 4rem;
 }
 
-.formGroup {
+.card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 1.5rem;
+}
+
+.cardTitle {
+    margin-bottom: 1.25rem;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.profileInfo {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    width: 100%;
+    align-items: flex-start;
+    gap: 0.3rem;
 }
 
-.formGroup label {
+.name {
+    color: var(--color-text);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.email {
     color: var(--color-text-muted);
     font-size: 14px;
+    overflow-wrap: anywhere;
 }
 
-.inputRow {
+.row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: space-between;
+    gap: 1rem;
 }
 
-.inputRow input {
-    flex: 1;
-    background-color: var(--color-surface);
+.rowLabel {
     color: var(--color-text);
-    border: none;
-    border-radius: var(--radius-md);
-    height: 2.75rem;
-    padding: 0 1rem;
-    font-size: 1rem;
-    outline: none;
-    font-family: inherit;
-    opacity: 0.7;
-    cursor: default;
-}
-
-.editIconBtn {
-    flex-shrink: 0;
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0;
-    border-radius: 50%;
-    background-color: var(--color-surface);
-    color: var(--color-text-muted);
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
     font-size: 15px;
-    line-height: 1;
-    box-sizing: border-box;
-    transition: background-color 0.2s, color 0.2s;
+    font-weight: 500;
 }
 
-.editIconBtn svg {
-    display: block;
+.rowHint {
+    margin-top: 0.2rem;
+    color: var(--color-text-muted);
+    font-size: 13px;
 }
 
-.editIconBtn:hover {
-    background-color: var(--color-accent);
+.secondaryBtn {
+    flex-shrink: 0;
+    height: 2.5rem;
+    padding: 0 1.1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: transparent;
     color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.secondaryBtn:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
 }
 
 /* Modal */
@@ -88,7 +101,8 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: calc(var(--z-overlay) + 1);
-    background-color: var(--color-surface);
+    background-color: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     padding: 2rem;
     width: 28rem;
@@ -118,7 +132,7 @@
 .modalField input {
     background-color: var(--color-bg);
     color: var(--color-text);
-    border: none;
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     height: 2.75rem;
     padding: 0 1rem;
@@ -128,8 +142,13 @@
     width: 100%;
 }
 
+.modalField input:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
 .modalError {
-    color: #ff4d4f;
+    color: var(--color-danger);
     font-size: 0.875rem;
     margin: 0;
 }
@@ -157,7 +176,7 @@
 
 .saveBtn {
     background-color: var(--color-accent);
-    color: var(--color-surface-light);
+    color: var(--color-on-accent);
     border: none;
     border-radius: var(--radius-md);
     padding: 0.6rem 1.5rem;
@@ -167,22 +186,28 @@
 }
 
 .saveBtn:hover {
-    background-color: var(--color-accent-dark);
+    background-color: var(--color-accent-hover);
 }
 
 /* Light mode */
-:global(body.light) .formGroup label {
-    color: var(--color-text-muted-light);
+:global(body.light) .card {
+    background-color: var(--color-surface-light);
 }
 
-:global(body.light) .inputRow input {
-    background-color: var(--color-surface-muted-light);
+:global(body.light) .cardTitle,
+:global(body.light) .name,
+:global(body.light) .rowLabel,
+:global(body.light) .secondaryBtn {
     color: var(--color-text-light);
 }
 
-:global(body.light) .editIconBtn {
-    background-color: var(--color-surface-muted-light);
+:global(body.light) .email,
+:global(body.light) .rowHint {
     color: var(--color-text-muted-light);
+}
+
+:global(body.light) .secondaryBtn:hover {
+    color: var(--color-accent);
 }
 
 :global(body.light) .modal {
@@ -209,11 +234,8 @@
 }
 
 @media (max-width: 768px) {
-  .myAccount {
-    margin: 4rem 1rem 1rem 1rem;
-  }
-
-  .myAccountContainer {
-    width: 100%;
+  .row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

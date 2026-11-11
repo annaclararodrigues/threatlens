@@ -16,9 +16,4 @@ public record PostResponse(String id,
                            String category,
                            ClassificationResponse classification,
                            Map<String, Object> meta) {
-
-    public static PostResponse fromTelegram(String id, String content, LocalDateTime createdAt,
-                                            ClassificationResponse classification, TelegramMeta meta) {
-        return new PostResponse(id, PostSource.TELEGRAM, null, content, null, createdAt, null, classification, meta.toMap());
-    }
 }

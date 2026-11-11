@@ -1,13 +1,13 @@
 import style from "./AlertCard.module.css"
-import React, { useState } from "react";
+import { useState } from "react";
 import AlertSelectedTags from "../AlertSelectedTags/AlertSelectedTags"
 import { FaRegEdit } from "react-icons/fa";
 import { IoTrashOutline } from "react-icons/io5";
 
 
 
-export default function AlertCard({ key, alertInfo, handleEditAlert, handleDeleteAlert }) {
-    const [isActive, setIsActive] = useState(alertInfo.active);
+export default function AlertCard({ alertInfo, handleEditAlert, handleDeleteAlert }) {
+    const [isActive] = useState(alertInfo.active);
 
 
     return (

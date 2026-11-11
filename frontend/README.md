@@ -94,7 +94,7 @@ npm install
 
 ### 3. Configure as variáveis de ambiente
 
-Copie o arquivo de exemplo e ajuste se necessário:
+Opcional: o front já usa `/api` como padrão quando `VITE_API_BASE_URL` não está definida. Para mudar a URL da API, copie o arquivo de exemplo e ajuste:
 
 ```bash
 cp .env.example .env

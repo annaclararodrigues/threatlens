@@ -10,7 +10,17 @@ export async function getStats(params = {}) {
   return data;
 }
 
+export async function getCollectionStatus() {
+  const { data } = await api.get("/posts/collection-status");
+  return data;
+}
+
 export async function getWordCloud(params = {}) {
   const { data } = await api.get("/posts/wordcloud", { params });
+  return data;
+}
+
+export async function getPostReplies(postId) {
+  const { data } = await api.get(`/posts/${encodeURIComponent(postId)}/replies`);
   return data;
 }
