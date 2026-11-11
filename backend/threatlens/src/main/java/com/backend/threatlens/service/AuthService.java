@@ -144,7 +144,7 @@ public class AuthService {
                 .build();
         verificationCodeRepository.save(verificationCode);
 
-        emailService.sendVerificationCode(email, code);
+        emailService.sendRegisterCode(email, code);
     }
 
     @Transactional
@@ -174,7 +174,7 @@ public class AuthService {
                 .build();
 
         verificationCodeRepository.save(entity);
-        emailService.sendVerificationCode(email, code);
+        emailService.sendResetPasswordCode(email, code);
     }
 
     @Transactional

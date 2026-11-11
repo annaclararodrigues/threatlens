@@ -55,13 +55,13 @@ class AuthServiceTest {
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode(any())).thenReturn("encoded");
         when(userRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        doNothing().when(emailService).sendVerificationCode(any(), any());
+        doNothing().when(emailService).sendRegisterCode(any(), any());
 
         MessageResponseDTO result = authService.register(dto);
 
         assertThat(result.message()).contains("user@test.com");
         verify(userRepository).save(any(UserEntity.class));
-        verify(emailService).sendVerificationCode(eq("user@test.com"), any());
+        verify(emailService).sendRegisterCode(eq("user@test.com"), any());
     }
 
     @Test
@@ -158,13 +158,13 @@ class AuthServiceTest {
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
         doNothing().when(verificationCodeRepository).deleteByEmailAndCodeType("user@test.com", CodeType.REGISTER);
         when(verificationCodeRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        doNothing().when(emailService).sendVerificationCode(any(), any());
+        doNothing().when(emailService).sendRegisterCode(any(), any());
 
         MessageResponseDTO result = authService.resendCode("user@test.com");
 
         assertThat(result.message()).contains("user@test.com");
         verify(verificationCodeRepository).save(any(VerificationCodeEntity.class));
-        verify(emailService).sendVerificationCode(eq("user@test.com"), any());
+        verify(emailService).sendRegisterCode(eq("user@test.com"), any());
     }
 
     @Test
@@ -195,13 +195,13 @@ class AuthServiceTest {
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
         doNothing().when(verificationCodeRepository).deleteByEmailAndCodeType("user@test.com", CodeType.RESET_PASSWORD);
         when(verificationCodeRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        doNothing().when(emailService).sendVerificationCode(any(), any());
+        doNothing().when(emailService).sendResetPasswordCode(any(), any());
 
         MessageResponseDTO result = authService.forgotPassword(dto);
 
         assertThat(result.message()).contains("redefinição");
         verify(verificationCodeRepository).save(any(VerificationCodeEntity.class));
-        verify(emailService).sendVerificationCode(eq("user@test.com"), any());
+        verify(emailService).sendResetPasswordCode(eq("user@test.com"), any());
     }
 
     @Test
@@ -224,13 +224,13 @@ class AuthServiceTest {
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
         doNothing().when(verificationCodeRepository).deleteByEmailAndCodeType("user@test.com", CodeType.RESET_PASSWORD);
         when(verificationCodeRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        doNothing().when(emailService).sendVerificationCode(any(), any());
+        doNothing().when(emailService).sendResetPasswordCode(any(), any());
 
         MessageResponseDTO result = authService.resendPasswordCode("user@test.com");
 
         assertThat(result.message()).contains("novo código foi enviado");
         verify(verificationCodeRepository).save(any(VerificationCodeEntity.class));
-        verify(emailService).sendVerificationCode(eq("user@test.com"), any());
+        verify(emailService).sendResetPasswordCode(eq("user@test.com"), any());
     }
 
     @Test
