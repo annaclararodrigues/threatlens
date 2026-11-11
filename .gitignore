@@ -1,1 +1,8 @@
 .env
+
+# IDE (IntelliJ)
+.idea/
+*.iml
+
+# Build (Maven)
+target/
