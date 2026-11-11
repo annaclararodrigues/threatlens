@@ -27,6 +27,15 @@ import {
 const SEARCH_DEBOUNCE_MS = 300;
 const PAGE_SIZE = 50;
 
+// Só os filtros da URL, sem a página e o post aberto: é o que define o resultado da busca
+function filtersOnly(searchParams) {
+  const params = new URLSearchParams(searchParams);
+  params.delete("page");
+  params.delete("id");
+  params.sort();
+  return params.toString();
+}
+
 const RELEVANCE_TONE = {
   HIGH: style.toneHigh,
   MEDIUM: style.toneMedium,
@@ -36,12 +45,10 @@ const RELEVANCE_TONE = {
 export default function Posts() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedId = searchParams.get("id");
-  // O post aberto (id) não é filtro: trocar de post não pode resetar a página
-  const filterKey = useMemo(() => {
-    const params = new URLSearchParams(searchParams);
-    params.delete("id");
-    return params.toString();
-  }, [searchParams]);
+  // Página na URL começa em 1 (?page=3); internamente, como na API, começa em 0
+  const pageParam = Number.parseInt(searchParams.get("page"), 10);
+  const page = Number.isFinite(pageParam) && pageParam > 1 ? pageParam - 1 : 0;
+  const filterKey = useMemo(() => filtersOnly(searchParams), [searchParams]);
 
   // Filtros vêm da URL (assim os links do dashboard abrem a lista já filtrada)
   const filters = useMemo(() => {
@@ -60,15 +67,15 @@ export default function Posts() {
     };
   }, [filterKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Página volta para 0 sempre que um filtro muda
-  const [pageState, setPageState] = useState({ key: filterKey, page: 0 });
-  const page = pageState.key === filterKey ? pageState.page : 0;
   const tableTopRef = useRef(null);
-  const setPage = (next) => {
+  const setPage = (next, options) => {
     if (next === page) return;
-    setPageState({ key: filterKey, page: next });
-    // Trocar de página também fecha o post aberto, pelo mesmo motivo dos filtros
-    if (selectedId) setParam("id", null, { replace: true });
+    updateParams((params) => {
+      if (next > 0) params.set("page", String(next + 1));
+      else params.delete("page");
+      // Trocar de página também fecha o post aberto, pelo mesmo motivo dos filtros
+      params.delete("id");
+    }, options);
     // A paginação fica no rodapé: sem isso, a página nova abriria já no fim da lista
     if (tableTopRef.current?.getBoundingClientRect().top < 0) {
       tableTopRef.current.scrollIntoView({ block: "start" });
@@ -95,19 +102,15 @@ export default function Posts() {
   const latestParams = useRef(searchParams);
   latestParams.current = searchParams;
 
-  const withoutId = (params) => {
-    const copy = new URLSearchParams(params);
-    copy.delete("id");
-    copy.sort();
-    return copy.toString();
-  };
-
   const updateParams = (mutate, options) => {
     const params = new URLSearchParams(latestParams.current);
     mutate(params);
-    // Mudou algum filtro? O post aberto pode não estar mais na lista: fecha o drawer
-    // (senão o id fica na URL e o post reabre sozinho ao voltar para o filtro anterior)
-    if (withoutId(params) !== withoutId(latestParams.current)) params.delete("id");
+    // Mudou algum filtro? Volta para a primeira página e fecha o drawer, já que o post aberto
+    // pode não estar mais na lista (senão ele reabriria sozinho ao voltar para o filtro anterior)
+    if (filtersOnly(params) !== filtersOnly(latestParams.current)) {
+      params.delete("page");
+      params.delete("id");
+    }
     latestParams.current = params;
     setSearchParams(params, options);
   };
@@ -122,6 +125,18 @@ export default function Posts() {
   const closeDrawer = () => selectPost(null);
   const prevPost = selectedIndex > 0 ? () => selectPost(posts[selectedIndex - 1]) : null;
   const nextPost = selectedIndex >= 0 && selectedIndex < posts.length - 1 ? () => selectPost(posts[selectedIndex + 1]) : null;
+
+  // Links antigos ou editados à mão: página além da última vai para a última, e um ?id=
+  // que não está na página carregada sai da URL (senão o post reabriria sozinho depois)
+  const totalPages = pagination?.totalPages;
+  useEffect(() => {
+    if (loading) return;
+    if (totalPages > 0 && page >= totalPages) {
+      setPage(totalPages - 1, { replace: true });
+    } else if (selectedId && selectedIndex < 0) {
+      setParam("id", null, { replace: true });
+    }
+  }, [loading, totalPages, page, selectedId, selectedIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Busca com debounce; o input só é sobrescrito quando a URL muda por outro motivo (ex.: "Limpar tudo")
   const [searchInput, setSearchInput] = useState(filters.search);

@@ -5,8 +5,6 @@ import { getPosts } from "../services/post/postService"
 export function usePosts({ page = 0, size = 20, period, from, to, relevance, sources, sort, order, category, search, withTotal = true } = {}) {
   const [posts, setPosts] = useState([]);
   const [pagination, setPagination] = useState(null);
-  // Começa carregando: a busca sai no primeiro efeito
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const sourcesKey = sources?.join(",") ?? "";
@@ -14,9 +12,15 @@ export function usePosts({ page = 0, size = 20, period, from, to, relevance, sou
   // Total da última contagem e os filtros a que ele pertence: trocar só de página reaproveita
   const totalRef = useRef(null);
 
+  // "Carregando" = os dados em mãos não são dos parâmetros atuais. Derivado no render (e não
+  // ligado num efeito) para não existir um render com parâmetros novos e posts antigos dados
+  // como prontos; inclui a primeira carga, já que nada foi carregado ainda
+  const requestKey = JSON.stringify([page, size, period, from, to, relevance, sourcesKey, sort, order, category, search, withTotal, reloadKey]);
+  const [loadedKey, setLoadedKey] = useState(null);
+  const loading = loadedKey !== requestKey;
+
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     setError(null);
 
     const params = { size };
@@ -53,10 +57,10 @@ export function usePosts({ page = 0, size = 20, period, from, to, relevance, sou
         setPagination(next);
       })
       .catch((err) => { if (!cancelled) setError(err); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .finally(() => { if (!cancelled) setLoadedKey(requestKey); });
 
     return () => { cancelled = true; };
-  }, [page, size, period, from, to, relevance, sourcesKey, sort, order, category, search, withTotal, reloadKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [requestKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { posts, pagination, loading, error, reload };
 }
