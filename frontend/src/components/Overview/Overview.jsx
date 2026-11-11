@@ -140,7 +140,10 @@ export default function Overview() {
                 analyzedLink={linkTo()}
                 relevantLink={linkTo({ relevance: "HIGH" })}
               />
+              {/* key = filtros da URL: trocar período ou fonte remonta a lista e fecha o drawer,
+                  que senão continuaria aberto mostrando o post que caiu na mesma posição */}
               <RelevantPostsTable
+                key={periodKey}
                 mostRelevantPosts={topPosts}
                 error={postsError}
                 seeAllLink={linkTo({ relevance: "HIGH", sort: "SCORE", order: "DESC" })}
