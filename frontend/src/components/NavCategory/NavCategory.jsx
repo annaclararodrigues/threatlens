@@ -4,7 +4,7 @@ export default function NavCategory({ title, children }) {
   return (
     <div className={style.categoryContainer}>
       <h2 className={style.navCategory}>{title}</h2>
-      <ul>{children}</ul>
+      <ul className={style.list}>{children}</ul>
     </div>
   );
 }
