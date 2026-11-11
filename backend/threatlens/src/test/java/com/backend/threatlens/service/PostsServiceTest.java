@@ -7,16 +7,17 @@ import com.backend.threatlens.dto.request.WordCloudQueryDTO;
 import com.backend.threatlens.dto.response.CollectionStatusDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
 import com.backend.threatlens.dto.response.WordCloudDTO;
-import com.backend.threatlens.dto.response.posts.ClassificationResponse;
-import com.backend.threatlens.dto.response.posts.PostResponse;
+import com.backend.threatlens.dto.response.posts.PostRepliesResponse;
 import com.backend.threatlens.dto.response.posts.PostsPageResponse;
 import com.backend.threatlens.enums.PostSource;
 import com.backend.threatlens.enums.RelevanceLevel;
+import com.backend.threatlens.enums.ReplyKind;
 import com.backend.threatlens.enums.SortBy;
 import com.backend.threatlens.enums.SortOrder;
 import com.backend.threatlens.enums.StatsPeriod;
 import com.backend.threatlens.exception.BusinessRuleViolationException;
-import com.backend.threatlens.repository.posts.PostsSourceRepository;
+import com.backend.threatlens.exception.InvalidRequestException;
+import com.backend.threatlens.repository.posts.PostsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,19 +25,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.time.LocalDateTime;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.intThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,36 +46,22 @@ import static org.mockito.Mockito.when;
 class PostsServiceTest {
 
     @Mock
-    private PostsSourceRepository telegramRepo;
+    private PostsRepository postsRepository;
 
-    @Mock
-    private PostsSourceRepository secondTelegramRepo;
-
-    private PostsService singleSourceService;
-    private PostsService multiSourceService;
+    private PostsService service;
 
     @BeforeEach
     void setUp() {
-        singleSourceService = new PostsService(List.of(telegramRepo));
-        multiSourceService  = new PostsService(List.of(telegramRepo, secondTelegramRepo));
+        service = new PostsService(postsRepository);
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    private PostsSourceRepository.SourceStats sourceStats(long total, long relevant,
-                                                           long low, long medium, long high) {
-        return new PostsSourceRepository.SourceStats(total, relevant, low, medium, high);
-    }
-
-    private PostResponse post(String id, LocalDateTime createdAt, Double score) {
-        ClassificationResponse clf = score == null ? null : new ClassificationResponse(
-                score >= 0.7, score,
-                score < 0.3 ? RelevanceLevel.LOW : score < 0.7 ? RelevanceLevel.MEDIUM : RelevanceLevel.HIGH,
-                null, null, null
-        );
-        return new PostResponse(id, PostSource.TELEGRAM, null, "content", null, createdAt, null, clf, null);
+    private PostsRepository.SourceStats sourceStats(PostSource source, long total, long relevant,
+                                                    long low, long medium, long high) {
+        return new PostsRepository.SourceStats(source, total, relevant, low, medium, high);
     }
 
     private PostsQueryDTO query(int page, int size) {
@@ -83,8 +71,21 @@ class PostsServiceTest {
         return q;
     }
 
-    private PostsSourceRepository.WordCount wordCount(String word, long count) {
-        return new PostsSourceRepository.WordCount(word, count);
+    private PostsFilter capturedStatsFilter() {
+        ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
+        verify(postsRepository).statsBySource(captor.capture());
+        return captor.getValue();
+    }
+
+    private PostsFilter capturedPageFilter() {
+        ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
+        verify(postsRepository).findPage(captor.capture(), anyInt(), anyInt(), any(), any());
+        return captor.getValue();
+    }
+
+    private void stubEmptyPage() {
+        when(postsRepository.count(any())).thenReturn(0L);
+        when(postsRepository.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
     }
 
     // =========================================================================
@@ -92,37 +93,19 @@ class PostsServiceTest {
     // =========================================================================
 
     @Nested
-    @MockitoSettings(strictness = Strictness.LENIENT)
     class GetStats {
-
-        @BeforeEach
-        void stubSources() {
-            when(telegramRepo.source()).thenReturn(PostSource.TELEGRAM);
-            when(secondTelegramRepo.source()).thenReturn(PostSource.TELEGRAM);
-        }
 
         @Nested
         class SourceAggregation {
 
             @Test
-            void singleSource_totalsMatchSourceStats() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(100, 40, 20, 30, 10));
+            void countsAreSummedAcrossSources() {
+                when(postsRepository.statsBySource(any())).thenReturn(List.of(
+                        sourceStats(PostSource.TELEGRAM, 100, 40, 20, 30, 10),
+                        sourceStats(PostSource.NULLEDBB, 50, 10, 5, 20, 5)
+                ));
 
-                PostStatsDTO result = singleSourceService.getStats(new StatsQueryDTO());
-
-                assertThat(result.summary().totalPosts()).isEqualTo(100);
-                assertThat(result.summary().relevantPostsInPeriod()).isEqualTo(40);
-                assertThat(result.relevanceDistribution().lowCount()).isEqualTo(20);
-                assertThat(result.relevanceDistribution().mediumCount()).isEqualTo(30);
-                assertThat(result.relevanceDistribution().highCount()).isEqualTo(10);
-            }
-
-            @Test
-            void multipleSources_countsAreSummedAcrossSources() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(100, 40, 20, 30, 10));
-                when(secondTelegramRepo.getStats(any())).thenReturn(sourceStats(50, 10, 5, 20, 5));
-
-                PostStatsDTO result = multiSourceService.getStats(new StatsQueryDTO());
+                PostStatsDTO result = service.getStats(new StatsQueryDTO());
 
                 assertThat(result.summary().totalPosts()).isEqualTo(150);
                 assertThat(result.summary().relevantPostsInPeriod()).isEqualTo(50);
@@ -132,24 +115,20 @@ class PostsServiceTest {
             }
 
             @Test
-            void sourceCountsContainOneEntryPerRepo() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(100, 0, 0, 0, 0));
-                when(secondTelegramRepo.getStats(any())).thenReturn(sourceStats(50, 0, 0, 0, 0));
+            void sourceCountsContainOneEntryPerSourceWithLowercaseName() {
+                when(postsRepository.statsBySource(any())).thenReturn(List.of(
+                        sourceStats(PostSource.TELEGRAM, 100, 30, 0, 0, 30),
+                        sourceStats(PostSource.NULLEDBB, 0, 0, 0, 0, 0)
+                ));
 
-                PostStatsDTO result = multiSourceService.getStats(new StatsQueryDTO());
+                PostStatsDTO result = service.getStats(new StatsQueryDTO());
 
-                assertThat(result.sources()).hasSize(2);
-                assertThat(result.sources().get(0).postCount()).isEqualTo(100);
-                assertThat(result.sources().get(1).postCount()).isEqualTo(50);
-            }
-
-            @Test
-            void sourceNameIsLowercaseEnumName() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(10, 5, 0, 0, 0));
-
-                PostStatsDTO result = singleSourceService.getStats(new StatsQueryDTO());
-
-                assertThat(result.sources().getFirst().sourceName()).isEqualTo("telegram");
+                assertThat(result.sources()).extracting(PostStatsDTO.SourceCount::sourceName)
+                        .containsExactly("telegram", "nulledbb");
+                assertThat(result.sources()).extracting(PostStatsDTO.SourceCount::postCount)
+                        .containsExactly(100L, 0L);
+                assertThat(result.sources()).extracting(PostStatsDTO.SourceCount::relevantCount)
+                        .containsExactly(30L, 0L);
             }
         }
 
@@ -158,29 +137,26 @@ class PostsServiceTest {
 
             @Test
             void zeroTotal_returnsPctZero() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(0, 0, 0, 0, 0));
+                when(postsRepository.statsBySource(any())).thenReturn(List.of(
+                        sourceStats(PostSource.TELEGRAM, 0, 0, 0, 0, 0)));
 
-                PostStatsDTO result = singleSourceService.getStats(new StatsQueryDTO());
-
-                assertThat(result.summary().relevantPostsPct()).isEqualTo(0.0);
+                assertThat(service.getStats(new StatsQueryDTO()).summary().relevantPostsPct()).isEqualTo(0.0);
             }
 
             @Test
             void halfRelevant_returns50() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(100, 50, 0, 0, 0));
+                when(postsRepository.statsBySource(any())).thenReturn(List.of(
+                        sourceStats(PostSource.TELEGRAM, 100, 50, 0, 0, 0)));
 
-                PostStatsDTO result = singleSourceService.getStats(new StatsQueryDTO());
-
-                assertThat(result.summary().relevantPostsPct()).isEqualTo(50.0);
+                assertThat(service.getStats(new StatsQueryDTO()).summary().relevantPostsPct()).isEqualTo(50.0);
             }
 
             @Test
             void nonIntegerResult_isRoundedTo2Decimals() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(3, 1, 0, 0, 0));
+                when(postsRepository.statsBySource(any())).thenReturn(List.of(
+                        sourceStats(PostSource.TELEGRAM, 3, 1, 0, 0, 0)));
 
-                PostStatsDTO result = singleSourceService.getStats(new StatsQueryDTO());
-
-                assertThat(result.summary().relevantPostsPct()).isEqualTo(33.33);
+                assertThat(service.getStats(new StatsQueryDTO()).summary().relevantPostsPct()).isEqualTo(33.33);
             }
         }
 
@@ -189,41 +165,32 @@ class PostsServiceTest {
 
             @Test
             void periodALL_passesNullDatesToRepo() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(0, 0, 0, 0, 0));
-
                 StatsQueryDTO query = new StatsQueryDTO();
                 query.setPeriod(StatsPeriod.ALL);
 
-                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-                singleSourceService.getStats(query);
-                verify(telegramRepo).getStats(captor.capture());
+                service.getStats(query);
 
-                assertThat(captor.getValue().from()).isNull();
-                assertThat(captor.getValue().to()).isNull();
+                PostsFilter filter = capturedStatsFilter();
+                assertThat(filter.from()).isNull();
+                assertThat(filter.to()).isNull();
             }
 
             @Test
             void periodDAY_passesFromAsApproximatelyOneDayAgo() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(0, 0, 0, 0, 0));
-
                 LocalDateTime before = LocalDateTime.now().minusDays(1);
 
                 StatsQueryDTO query = new StatsQueryDTO();
                 query.setPeriod(StatsPeriod.DAY);
-
-                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-                singleSourceService.getStats(query);
-                verify(telegramRepo).getStats(captor.capture());
+                service.getStats(query);
 
                 LocalDateTime after = LocalDateTime.now().minusDays(1);
-                assertThat(captor.getValue().from()).isBetween(before, after);
-                assertThat(captor.getValue().to()).isNull();
+                PostsFilter filter = capturedStatsFilter();
+                assertThat(filter.from()).isBetween(before, after);
+                assertThat(filter.to()).isNull();
             }
 
             @Test
             void explicitFromTo_overridesPeriod() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(0, 0, 0, 0, 0));
-
                 LocalDateTime from = LocalDateTime.of(2024, 1, 1, 0, 0);
                 LocalDateTime to   = LocalDateTime.of(2024, 1, 31, 23, 59);
 
@@ -231,31 +198,25 @@ class PostsServiceTest {
                 query.setPeriod(StatsPeriod.DAY);
                 query.setFrom(from);
                 query.setTo(to);
+                service.getStats(query);
 
-                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-                singleSourceService.getStats(query);
-                verify(telegramRepo).getStats(captor.capture());
-
-                assertThat(captor.getValue().from()).isEqualTo(from);
-                assertThat(captor.getValue().to()).isEqualTo(to);
+                PostsFilter filter = capturedStatsFilter();
+                assertThat(filter.from()).isEqualTo(from);
+                assertThat(filter.to()).isEqualTo(to);
             }
 
             @Test
             void onlyFromProvided_overridesPeriod() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(0, 0, 0, 0, 0));
-
                 LocalDateTime from = LocalDateTime.of(2024, 6, 1, 0, 0);
 
                 StatsQueryDTO query = new StatsQueryDTO();
                 query.setPeriod(StatsPeriod.WEEK);
                 query.setFrom(from);
+                service.getStats(query);
 
-                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-                singleSourceService.getStats(query);
-                verify(telegramRepo).getStats(captor.capture());
-
-                assertThat(captor.getValue().from()).isEqualTo(from);
-                assertThat(captor.getValue().to()).isNull();
+                PostsFilter filter = capturedStatsFilter();
+                assertThat(filter.from()).isEqualTo(from);
+                assertThat(filter.to()).isNull();
             }
         }
 
@@ -264,28 +225,19 @@ class PostsServiceTest {
 
             @Test
             void noFilter_queriesAllSources() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(0, 0, 0, 0, 0));
-                when(secondTelegramRepo.getStats(any())).thenReturn(sourceStats(0, 0, 0, 0, 0));
+                service.getStats(new StatsQueryDTO());
 
-                multiSourceService.getStats(new StatsQueryDTO());
-
-                verify(telegramRepo).getStats(any());
-                verify(secondTelegramRepo).getStats(any());
+                assertThat(capturedStatsFilter().sources()).containsExactly(PostSource.values());
             }
 
             @Test
-            void filterBySource_queriesOnlyMatchingSourceRepos() {
-                when(telegramRepo.getStats(any())).thenReturn(sourceStats(10, 5, 0, 0, 0));
-                when(secondTelegramRepo.getStats(any())).thenReturn(sourceStats(5, 2, 0, 0, 0));
-
+            void filterBySource_passesOnlySelectedSourcesWithoutDuplicates() {
                 StatsQueryDTO query = new StatsQueryDTO();
-                query.setSources(List.of(PostSource.TELEGRAM));
+                query.setSources(List.of(PostSource.NULLEDBB, PostSource.HA, PostSource.NULLEDBB));
 
-                PostStatsDTO result = multiSourceService.getStats(query);
+                service.getStats(query);
 
-                verify(telegramRepo).getStats(any());
-                verify(secondTelegramRepo).getStats(any());
-                assertThat(result.summary().totalPosts()).isEqualTo(15);
+                assertThat(capturedStatsFilter().sources()).containsExactly(PostSource.NULLEDBB, PostSource.HA);
             }
         }
 
@@ -298,7 +250,7 @@ class PostsServiceTest {
                 query.setFrom(LocalDateTime.of(2024, 2, 1, 0, 0));
                 query.setTo(LocalDateTime.of(2024, 1, 1, 0, 0));
 
-                assertThatThrownBy(() -> singleSourceService.getStats(query))
+                assertThatThrownBy(() -> service.getStats(query))
                         .isInstanceOf(BusinessRuleViolationException.class)
                         .hasMessageContaining("'from' can not be after 'to'");
             }
@@ -312,205 +264,92 @@ class PostsServiceTest {
     @Nested
     class GetPosts {
 
-        @Nested
-        class SingleSourcePath {
+        @Test
+        void includeTotalFalse_skipsCountAndReturnsNullTotals() {
+            when(postsRepository.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
 
-            @Test
-            void delegatesToRepoCountAndFindPage() {
-                when(telegramRepo.count(any())).thenReturn(100L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
+            PostsQueryDTO q = query(3, 20);
+            q.setIncludeTotal(false);
+            PostsPageResponse result = service.getPosts(q);
 
-                singleSourceService.getPosts(query(0, 20));
+            verify(postsRepository, never()).count(any());
+            verify(postsRepository).findPage(any(), eq(60), eq(20), any(), any());
+            assertThat(result.pagination().total()).isNull();
+            assertThat(result.pagination().totalPages()).isNull();
+            assertThat(result.pagination().page()).isEqualTo(3);
+        }
 
-                verify(telegramRepo).count(any());
-                verify(telegramRepo).findPage(any(), eq(0), eq(20), any(), any());
-            }
+        @Test
+        void delegatesToRepoCountAndFindPage() {
+            stubEmptyPage();
 
-            @Test
-            void paginationMetadata_totalComesFromRepoCount() {
-                when(telegramRepo.count(any())).thenReturn(45L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
+            service.getPosts(query(0, 20));
 
-                PostsPageResponse result = singleSourceService.getPosts(query(0, 20));
+            verify(postsRepository).count(any());
+            verify(postsRepository).findPage(any(), eq(0), eq(20), any(), any());
+        }
 
-                assertThat(result.pagination().total()).isEqualTo(45);
-                assertThat(result.pagination().totalPages()).isEqualTo(3);
-                assertThat(result.pagination().page()).isEqualTo(0);
-                assertThat(result.pagination().size()).isEqualTo(20);
-            }
+        @Test
+        void paginationMetadata_totalComesFromRepoCount() {
+            when(postsRepository.count(any())).thenReturn(45L);
+            when(postsRepository.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
 
-            @Test
-            void page2Size10_offsetIs20() {
-                when(telegramRepo.count(any())).thenReturn(100L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
+            PostsPageResponse result = service.getPosts(query(0, 20));
 
-                singleSourceService.getPosts(query(2, 10));
+            assertThat(result.pagination().total()).isEqualTo(45);
+            assertThat(result.pagination().totalPages()).isEqualTo(3);
+            assertThat(result.pagination().page()).isEqualTo(0);
+            assertThat(result.pagination().size()).isEqualTo(20);
+        }
 
-                verify(telegramRepo).findPage(any(), eq(20), eq(10), any(), any());
-            }
+        @Test
+        void page2Size10_offsetIs20() {
+            stubEmptyPage();
 
-            @Test
-            void filterFields_passedToRepo() {
-                when(telegramRepo.count(any())).thenReturn(0L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
+            service.getPosts(query(2, 10));
 
-                PostsQueryDTO q = query(0, 20);
-                q.setRelevance(RelevanceLevel.HIGH);
-                q.setCategory("malware");
+            verify(postsRepository).findPage(any(), eq(20), eq(10), any(), any());
+        }
 
-                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-                singleSourceService.getPosts(q);
-                verify(telegramRepo).findPage(captor.capture(), anyInt(), anyInt(), any(), any());
+        @Test
+        void filterFields_passedToRepo() {
+            stubEmptyPage();
 
-                assertThat(captor.getValue().relevance()).isEqualTo(RelevanceLevel.HIGH);
-                assertThat(captor.getValue().category()).isEqualTo("malware");
-            }
+            PostsQueryDTO q = query(0, 20);
+            q.setRelevance(RelevanceLevel.HIGH);
+            q.setCategory("malware");
+            q.setSearch("ransomware");
+            service.getPosts(q);
 
-            @Test
-            void sortAndOrder_passedToRepo() {
-                when(telegramRepo.count(any())).thenReturn(0L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
+            PostsFilter filter = capturedPageFilter();
+            assertThat(filter.relevance()).isEqualTo(RelevanceLevel.HIGH);
+            assertThat(filter.category()).isEqualTo("malware");
+            assertThat(filter.search()).isEqualTo("ransomware");
+        }
 
-                PostsQueryDTO q = query(0, 20);
-                q.setSort(SortBy.SCORE);
-                q.setOrder(SortOrder.ASC);
+        @Test
+        void noSourceFilter_queriesAllSources() {
+            stubEmptyPage();
 
-                singleSourceService.getPosts(q);
+            service.getPosts(query(0, 20));
 
-                verify(telegramRepo).findPage(any(), anyInt(), anyInt(), eq(SortBy.SCORE), eq(SortOrder.ASC));
-            }
+            assertThat(capturedPageFilter().sources()).containsExactly(PostSource.values());
+        }
+
+        @Test
+        void sortAndOrder_passedToRepo() {
+            stubEmptyPage();
+
+            PostsQueryDTO q = query(0, 20);
+            q.setSort(SortBy.SCORE);
+            q.setOrder(SortOrder.ASC);
+            service.getPosts(q);
+
+            verify(postsRepository).findPage(any(), anyInt(), anyInt(), eq(SortBy.SCORE), eq(SortOrder.ASC));
         }
 
         @Nested
-        class MultiSourcePath {
-
-            @Test
-            void totalIsInMemoryMergedCount() {
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("a", null, null), post("b", null, null)));
-                when(secondTelegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("c", null, null)));
-
-                PostsPageResponse result = multiSourceService.getPosts(query(0, 10));
-
-                assertThat(result.pagination().total()).isEqualTo(3);
-            }
-
-            @Test
-            void sortByDateDESC_returnsNewestFirst() {
-                LocalDateTime t1 = LocalDateTime.of(2024, 6, 1, 10, 0);
-                LocalDateTime t2 = LocalDateTime.of(2024, 6, 1, 9, 0);
-                LocalDateTime t3 = LocalDateTime.of(2024, 6, 1, 8, 0);
-
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("newest", t1, null)));
-                when(secondTelegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("middle", t2, null), post("oldest", t3, null)));
-
-                PostsQueryDTO q = query(0, 10);
-                q.setSort(SortBy.DATE);
-                q.setOrder(SortOrder.DESC);
-
-                PostsPageResponse result = multiSourceService.getPosts(q);
-
-                assertThat(result.data()).extracting(PostResponse::id)
-                        .containsExactly("newest", "middle", "oldest");
-            }
-
-            @Test
-            void sortByDateASC_returnsOldestFirst() {
-                LocalDateTime t1 = LocalDateTime.of(2024, 6, 1, 10, 0);
-                LocalDateTime t2 = LocalDateTime.of(2024, 6, 1, 9, 0);
-
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("newer", t1, null)));
-                when(secondTelegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("older", t2, null)));
-
-                PostsQueryDTO q = query(0, 10);
-                q.setSort(SortBy.DATE);
-                q.setOrder(SortOrder.ASC);
-
-                PostsPageResponse result = multiSourceService.getPosts(q);
-
-                assertThat(result.data()).extracting(PostResponse::id)
-                        .containsExactly("older", "newer");
-            }
-
-            @Test
-            void sortByScoreDESC_returnsHighestScoreFirst() {
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("low", null, 0.2)));
-                when(secondTelegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("high", null, 0.9)));
-
-                PostsQueryDTO q = query(0, 10);
-                q.setSort(SortBy.SCORE);
-                q.setOrder(SortOrder.DESC);
-
-                PostsPageResponse result = multiSourceService.getPosts(q);
-
-                assertThat(result.data()).extracting(PostResponse::id)
-                        .containsExactly("high", "low");
-            }
-
-            @Test
-            void nullClassification_treatedAsScore0WhenSortingByScore() {
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("noScore", null, null)));
-                when(secondTelegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("hasScore", null, 0.5)));
-
-                PostsQueryDTO q = query(0, 10);
-                q.setSort(SortBy.SCORE);
-                q.setOrder(SortOrder.DESC);
-
-                PostsPageResponse result = multiSourceService.getPosts(q);
-
-                assertThat(result.data()).extracting(PostResponse::id)
-                        .containsExactly("hasScore", "noScore");
-            }
-
-            @Test
-            void secondPage_returnsCorrectSliceOfMergedList() {
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(
-                                post("a", LocalDateTime.of(2024, 1, 4, 0, 0), null),
-                                post("b", LocalDateTime.of(2024, 1, 3, 0, 0), null),
-                                post("c", LocalDateTime.of(2024, 1, 2, 0, 0), null)
-                        ));
-                when(secondTelegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(
-                                post("d", LocalDateTime.of(2024, 1, 1, 0, 0), null)
-                        ));
-
-                PostsQueryDTO q = query(1, 2); // page=1, size=2 → offset=2
-                q.setSort(SortBy.DATE);
-                q.setOrder(SortOrder.DESC);
-
-                PostsPageResponse result = multiSourceService.getPosts(q);
-
-                assertThat(result.data()).extracting(PostResponse::id)
-                        .containsExactly("c", "d");
-                assertThat(result.pagination().totalPages()).isEqualTo(2);
-            }
-
-            @Test
-            void offsetBeyondMergedTotal_returnsEmptyPage() {
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of(post("a", null, null)));
-                when(secondTelegramRepo.findPage(any(), anyInt(), anyInt(), any(), any()))
-                        .thenReturn(List.of());
-
-                PostsPageResponse result = multiSourceService.getPosts(query(5, 20));
-
-                assertThat(result.data()).isEmpty();
-                assertThat(result.pagination().total()).isEqualTo(1);
-            }
-        }
-
-        @Nested
-        class DateWindowValidation {
+        class DateWindow {
 
             @Test
             void fromAfterTo_throwsBusinessRuleViolationException() {
@@ -518,104 +357,39 @@ class PostsServiceTest {
                 q.setFrom(LocalDateTime.of(2024, 2, 1, 0, 0));
                 q.setTo(LocalDateTime.of(2024, 1, 1, 0, 0));
 
-                assertThatThrownBy(() -> singleSourceService.getPosts(q))
+                assertThatThrownBy(() -> service.getPosts(q))
                         .isInstanceOf(BusinessRuleViolationException.class)
                         .hasMessageContaining("'from' can not be after 'to'");
             }
 
             @Test
             void equalFromAndTo_doesNotThrow() {
+                stubEmptyPage();
                 LocalDateTime dt = LocalDateTime.of(2024, 1, 1, 0, 0);
-
-                when(telegramRepo.count(any())).thenReturn(0L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
 
                 PostsQueryDTO q = query(0, 20);
                 q.setFrom(dt);
                 q.setTo(dt);
 
-                PostsPageResponse result = singleSourceService.getPosts(q);
-
-                assertThat(result).isNotNull();
+                assertThat(service.getPosts(q)).isNotNull();
             }
-
-            @Test
-            void onlyFromProvided_doesNotThrow() {
-                when(telegramRepo.count(any())).thenReturn(0L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
-
-                PostsQueryDTO q = query(0, 20);
-                q.setFrom(LocalDateTime.of(2024, 1, 1, 0, 0));
-
-                PostsPageResponse result = singleSourceService.getPosts(q);
-
-                assertThat(result).isNotNull();
-            }
-
-            @Test
-            void dateWindowPassedToRepo() {
-                LocalDateTime from = LocalDateTime.of(2024, 1, 1, 0, 0);
-                LocalDateTime to   = LocalDateTime.of(2024, 1, 31, 23, 59);
-
-                when(telegramRepo.count(any())).thenReturn(0L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
-
-                PostsQueryDTO q = query(0, 20);
-                q.setFrom(from);
-                q.setTo(to);
-
-                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-                singleSourceService.getPosts(q);
-                verify(telegramRepo).findPage(captor.capture(), anyInt(), anyInt(), any(), any());
-
-                assertThat(captor.getValue().from()).isEqualTo(from);
-                assertThat(captor.getValue().to()).isEqualTo(to);
-            }
-        }
-
-        @Nested
-        class TimeWindow {
 
             @Test
             void periodALL_passesNullDatesToRepo() {
-                when(telegramRepo.count(any())).thenReturn(0L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
+                stubEmptyPage();
 
                 PostsQueryDTO q = query(0, 20);
                 q.setPeriod(StatsPeriod.ALL);
+                service.getPosts(q);
 
-                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-                singleSourceService.getPosts(q);
-                verify(telegramRepo).findPage(captor.capture(), anyInt(), anyInt(), any(), any());
-
-                assertThat(captor.getValue().from()).isNull();
-                assertThat(captor.getValue().to()).isNull();
-            }
-
-            @Test
-            void periodDAY_passesFromAsApproximatelyOneDayAgo() {
-                when(telegramRepo.count(any())).thenReturn(0L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
-
-                LocalDateTime before = LocalDateTime.now().minusDays(1);
-
-                PostsQueryDTO q = query(0, 20);
-                q.setPeriod(StatsPeriod.DAY);
-
-                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-                singleSourceService.getPosts(q);
-                verify(telegramRepo).findPage(captor.capture(), anyInt(), anyInt(), any(), any());
-
-                LocalDateTime after = LocalDateTime.now().minusDays(1);
-                assertThat(captor.getValue().from()).isBetween(before, after);
-                assertThat(captor.getValue().to()).isNull();
+                PostsFilter filter = capturedPageFilter();
+                assertThat(filter.from()).isNull();
+                assertThat(filter.to()).isNull();
             }
 
             @Test
             void explicitFromTo_overridesPeriod() {
-                when(telegramRepo.count(any())).thenReturn(0L);
-                when(telegramRepo.findPage(any(), anyInt(), anyInt(), any(), any())).thenReturn(List.of());
-
+                stubEmptyPage();
                 LocalDateTime from = LocalDateTime.of(2024, 1, 1, 0, 0);
                 LocalDateTime to   = LocalDateTime.of(2024, 1, 31, 23, 59);
 
@@ -623,13 +397,11 @@ class PostsServiceTest {
                 q.setPeriod(StatsPeriod.DAY);
                 q.setFrom(from);
                 q.setTo(to);
+                service.getPosts(q);
 
-                ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-                singleSourceService.getPosts(q);
-                verify(telegramRepo).findPage(captor.capture(), anyInt(), anyInt(), any(), any());
-
-                assertThat(captor.getValue().from()).isEqualTo(from);
-                assertThat(captor.getValue().to()).isEqualTo(to);
+                PostsFilter filter = capturedPageFilter();
+                assertThat(filter.from()).isEqualTo(from);
+                assertThat(filter.to()).isEqualTo(to);
             }
         }
     }
@@ -639,107 +411,37 @@ class PostsServiceTest {
     // =========================================================================
 
     @Nested
-    @MockitoSettings(strictness = Strictness.LENIENT)
     class GetWordCloud {
 
-        @BeforeEach
-        void stubSources() {
-            when(telegramRepo.source()).thenReturn(PostSource.TELEGRAM);
-            when(secondTelegramRepo.source()).thenReturn(PostSource.TELEGRAM);
-        }
-
         @Test
-        void singleSource_returnsWordsSortedByCountDesc() {
-            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of(
-                    wordCount("malware", 10),
-                    wordCount("phishing", 25)
+        void mapsRepoWordsInOrder() {
+            when(postsRepository.wordFrequencies(any(), anyInt())).thenReturn(List.of(
+                    new PostsRepository.WordCount("phishing", 25),
+                    new PostsRepository.WordCount("malware", 10)
             ));
 
-            WordCloudDTO result = singleSourceService.getWordCloud(new WordCloudQueryDTO());
+            WordCloudDTO result = service.getWordCloud(new WordCloudQueryDTO());
 
             assertThat(result.words()).extracting(WordCloudDTO.WordEntry::word)
                     .containsExactly("phishing", "malware");
+            assertThat(result.words()).extracting(WordCloudDTO.WordEntry::count)
+                    .containsExactly(25L, 10L);
         }
 
         @Test
-        void multipleSources_sameWordCountsAreSummedAcrossSources() {
-            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of(wordCount("malware", 10)));
-            when(secondTelegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of(wordCount("malware", 5)));
-
-            WordCloudDTO result = multiSourceService.getWordCloud(new WordCloudQueryDTO());
-
-            assertThat(result.words()).hasSize(1);
-            assertThat(result.words().getFirst().word()).isEqualTo("malware");
-            assertThat(result.words().getFirst().count()).isEqualTo(15);
-        }
-
-        @Test
-        void multipleSources_fetchesMoreThanRequestedLimitPerSourceToAvoidMissingWords() {
-            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
-            when(secondTelegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
-
-            WordCloudQueryDTO query = new WordCloudQueryDTO();
-            query.setLimit(50);
-
-            multiSourceService.getWordCloud(query);
-
-            verify(telegramRepo).wordFrequencies(any(), intThat(fetchLimit -> fetchLimit > query.getLimit()));
-            verify(secondTelegramRepo).wordFrequencies(any(), intThat(fetchLimit -> fetchLimit > query.getLimit()));
-        }
-
-        @Test
-        void singleSource_fetchesExactlyTheRequestedLimit() {
-            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
-
-            WordCloudQueryDTO query = new WordCloudQueryDTO();
-            query.setLimit(50);
-
-            singleSourceService.getWordCloud(query);
-
-            verify(telegramRepo).wordFrequencies(any(), eq(50));
-        }
-
-        @Test
-        void resultIsTruncatedToRequestedLimit() {
-            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of(
-                    wordCount("a", 3), wordCount("b", 2), wordCount("c", 1)
-            ));
-
-            WordCloudQueryDTO query = new WordCloudQueryDTO();
-            query.setLimit(2);
-
-            WordCloudDTO result = singleSourceService.getWordCloud(query);
-
-            assertThat(result.words()).extracting(WordCloudDTO.WordEntry::word)
-                    .containsExactly("a", "b");
-        }
-
-        @Test
-        void filterFields_passedToRepo() {
-            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
-
+        void filterAndLimit_passedToRepo() {
             WordCloudQueryDTO query = new WordCloudQueryDTO();
             query.setRelevance(RelevanceLevel.HIGH);
             query.setCategory("malware");
-
-            ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
-            singleSourceService.getWordCloud(query);
-            verify(telegramRepo).wordFrequencies(captor.capture(), anyInt());
-
-            assertThat(captor.getValue().relevance()).isEqualTo(RelevanceLevel.HIGH);
-            assertThat(captor.getValue().category()).isEqualTo("malware");
-        }
-
-        @Test
-        void limitField_passedToRepo() {
-            when(telegramRepo.wordFrequencies(any(), anyInt())).thenReturn(List.of());
-
-            WordCloudQueryDTO query = new WordCloudQueryDTO();
             query.setLimit(30);
 
-            singleSourceService.getWordCloud(query);
+            service.getWordCloud(query);
 
-            verify(telegramRepo).wordFrequencies(any(), eq(30));
+            ArgumentCaptor<PostsFilter> captor = ArgumentCaptor.forClass(PostsFilter.class);
+            verify(postsRepository).wordFrequencies(captor.capture(), eq(30));
+            assertThat(captor.getValue().relevance()).isEqualTo(RelevanceLevel.HIGH);
+            assertThat(captor.getValue().category()).isEqualTo("malware");
+            assertThat(captor.getValue().sources()).containsExactly(PostSource.values());
         }
 
         @Test
@@ -748,7 +450,7 @@ class PostsServiceTest {
             query.setFrom(LocalDateTime.of(2024, 2, 1, 0, 0));
             query.setTo(LocalDateTime.of(2024, 1, 1, 0, 0));
 
-            assertThatThrownBy(() -> singleSourceService.getWordCloud(query))
+            assertThatThrownBy(() -> service.getWordCloud(query))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("'from' can not be after 'to'");
         }
@@ -759,58 +461,103 @@ class PostsServiceTest {
     // =========================================================================
 
     @Nested
-    @MockitoSettings(strictness = Strictness.LENIENT)
     class GetCollectionStatus {
 
-        @BeforeEach
-        void stubSources() {
-            when(telegramRepo.source()).thenReturn(PostSource.TELEGRAM);
-            when(secondTelegramRepo.source()).thenReturn(PostSource.TELEGRAM);
+        private Map<PostSource, LocalDateTime> lastCollected(LocalDateTime telegram, LocalDateTime nulledbb) {
+            Map<PostSource, LocalDateTime> map = new EnumMap<>(PostSource.class);
+            map.put(PostSource.TELEGRAM, telegram);
+            map.put(PostSource.NULLEDBB, nulledbb);
+            return map;
         }
 
         @Test
-        void singleSource_returnsItsLastCollectedAt() {
+        void returnsOneEntryPerSourceWithLowercaseName() {
             LocalDateTime last = LocalDateTime.of(2026, 10, 22, 10, 30);
-            when(telegramRepo.lastCollectedAt()).thenReturn(Optional.of(last));
+            when(postsRepository.lastCollectedAtBySource()).thenReturn(lastCollected(last, null));
 
-            CollectionStatusDTO result = singleSourceService.getCollectionStatus();
+            CollectionStatusDTO result = service.getCollectionStatus();
 
-            assertThat(result.lastCollectedAt()).isEqualTo(last);
-            assertThat(result.sources()).containsExactly(new CollectionStatusDTO.SourceStatus("telegram", last));
+            assertThat(result.sources()).containsExactly(
+                    new CollectionStatusDTO.SourceStatus("telegram", last),
+                    new CollectionStatusDTO.SourceStatus("nulledbb", null));
         }
 
         @Test
-        void multipleSources_overallIsTheMostRecent() {
+        void overallIsTheMostRecent() {
             LocalDateTime older = LocalDateTime.of(2026, 10, 20, 8, 0);
             LocalDateTime newer = LocalDateTime.of(2026, 10, 22, 10, 30);
-            when(telegramRepo.lastCollectedAt()).thenReturn(Optional.of(older));
-            when(secondTelegramRepo.lastCollectedAt()).thenReturn(Optional.of(newer));
+            when(postsRepository.lastCollectedAtBySource()).thenReturn(lastCollected(older, newer));
 
-            CollectionStatusDTO result = multiSourceService.getCollectionStatus();
-
-            assertThat(result.lastCollectedAt()).isEqualTo(newer);
-            assertThat(result.sources()).hasSize(2);
+            assertThat(service.getCollectionStatus().lastCollectedAt()).isEqualTo(newer);
         }
 
         @Test
-        void sourceWithoutMessages_isIgnoredInOverall() {
+        void sourceWithoutData_isIgnoredInOverall() {
             LocalDateTime last = LocalDateTime.of(2026, 10, 22, 10, 30);
-            when(telegramRepo.lastCollectedAt()).thenReturn(Optional.empty());
-            when(secondTelegramRepo.lastCollectedAt()).thenReturn(Optional.of(last));
+            when(postsRepository.lastCollectedAtBySource()).thenReturn(lastCollected(null, last));
 
-            CollectionStatusDTO result = multiSourceService.getCollectionStatus();
-
-            assertThat(result.lastCollectedAt()).isEqualTo(last);
-            assertThat(result.sources().getFirst().lastCollectedAt()).isNull();
+            assertThat(service.getCollectionStatus().lastCollectedAt()).isEqualTo(last);
         }
 
         @Test
-        void noMessagesAtAll_returnsNull() {
-            when(telegramRepo.lastCollectedAt()).thenReturn(Optional.empty());
+        void noDataAtAll_returnsNull() {
+            when(postsRepository.lastCollectedAtBySource()).thenReturn(lastCollected(null, null));
 
-            CollectionStatusDTO result = singleSourceService.getCollectionStatus();
+            assertThat(service.getCollectionStatus().lastCollectedAt()).isNull();
+        }
+    }
 
-            assertThat(result.lastCollectedAt()).isNull();
+    // =========================================================================
+    // getReplies
+    // =========================================================================
+
+    @Nested
+    class GetReplies {
+
+        @Test
+        void splitsSourceLanguageAndIdFromThePostId() {
+            PostRepliesResponse.Answer answer = new PostRepliesResponse.Answer(
+                    "7", "alice", null, "resposta", Map.of(), List.of());
+            when(postsRepository.findReplies(PostSource.HA, "ptbr", 42L))
+                    .thenReturn(Optional.of(new PostsRepository.Replies(ReplyKind.ANSWER, List.of(answer))));
+
+            PostRepliesResponse result = service.getReplies("ha:ptbr:42");
+
+            assertThat(result.postId()).isEqualTo("ha:ptbr:42");
+            assertThat(result.kind()).isEqualTo(ReplyKind.ANSWER);
+            assertThat(result.answers()).containsExactly(answer);
+        }
+
+        @Test
+        void postIdWithoutLanguage_passesNullSuffix() {
+            when(postsRepository.findReplies(PostSource.NULLEDBB, null, 5L))
+                    .thenReturn(Optional.of(new PostsRepository.Replies(ReplyKind.ANSWER, List.of())));
+
+            assertThat(service.getReplies("nulledbb:5").answers()).isEmpty();
+        }
+
+        @Test
+        void sourceWithoutReplies_throwsInvalidRequest() {
+            when(postsRepository.findReplies(PostSource.TELEGRAM, null, 5L))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.getReplies("telegram:5"))
+                    .isInstanceOf(InvalidRequestException.class);
+        }
+
+        @Test
+        void unknownSource_throwsInvalidRequestWithoutQuerying() {
+            assertThatThrownBy(() -> service.getReplies("reddit:5"))
+                    .isInstanceOf(InvalidRequestException.class);
+            verify(postsRepository, never()).findReplies(any(), any(), anyLong());
+        }
+
+        @Test
+        void nonNumericOrMalformedId_throwsInvalidRequestWithoutQuerying() {
+            assertThatThrownBy(() -> service.getReplies("ha:ptbr:abc")).isInstanceOf(InvalidRequestException.class);
+            assertThatThrownBy(() -> service.getReplies("ha")).isInstanceOf(InvalidRequestException.class);
+            assertThatThrownBy(() -> service.getReplies("ha:a:b:1")).isInstanceOf(InvalidRequestException.class);
+            verify(postsRepository, never()).findReplies(any(), any(), anyLong());
         }
     }
 }

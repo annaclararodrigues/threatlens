@@ -6,15 +6,18 @@ import com.backend.threatlens.dto.request.WordCloudQueryDTO;
 import com.backend.threatlens.dto.response.CollectionStatusDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
 import com.backend.threatlens.dto.response.WordCloudDTO;
+import com.backend.threatlens.dto.response.posts.PostRepliesResponse;
 import com.backend.threatlens.dto.response.posts.PostResponse;
 import com.backend.threatlens.dto.response.posts.PostsPageResponse;
 import com.backend.threatlens.enums.PostSource;
 import com.backend.threatlens.enums.RelevanceLevel;
+import com.backend.threatlens.enums.ReplyKind;
 import com.backend.threatlens.enums.SortBy;
 import com.backend.threatlens.enums.SortOrder;
 import com.backend.threatlens.enums.StatsPeriod;
 import com.backend.threatlens.exception.BusinessRuleViolationException;
 import com.backend.threatlens.exception.GlobalExceptionHandler;
+import com.backend.threatlens.exception.InvalidRequestException;
 import com.backend.threatlens.service.PostsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -29,6 +32,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -73,7 +77,7 @@ class PostsControllerTest {
                 );
                 PostsPageResponse response = new PostsPageResponse(
                         List.of(post),
-                        new PostsPageResponse.Pagination(0, 20, 1, 1)
+                        new PostsPageResponse.Pagination(0, 20, 1L, 1)
                 );
                 when(postsService.getPosts(any())).thenReturn(response);
 
@@ -92,7 +96,7 @@ class PostsControllerTest {
             @Test
             void emptyResult_returnsEmptyDataArray() throws Exception {
                 when(postsService.getPosts(any())).thenReturn(
-                        new PostsPageResponse(List.of(), new PostsPageResponse.Pagination(0, 20, 0, 0))
+                        new PostsPageResponse(List.of(), new PostsPageResponse.Pagination(0, 20, 0L, 0))
                 );
 
                 mockMvc.perform(get("/posts"))
@@ -253,7 +257,7 @@ class PostsControllerTest {
                 PostStatsDTO response = new PostStatsDTO(
                         new PostStatsDTO.Summary(200, 80, 40.0),
                         new PostStatsDTO.RelevanceDistribution(30, 90, 80),
-                        List.of(new PostStatsDTO.SourceCount("telegram", 200))
+                        List.of(new PostStatsDTO.SourceCount("telegram", 200, 80))
                 );
                 when(postsService.getStats(any())).thenReturn(response);
 
@@ -266,7 +270,8 @@ class PostsControllerTest {
                         .andExpect(jsonPath("$.relevanceDistribution.mediumCount").value(90))
                         .andExpect(jsonPath("$.relevanceDistribution.highCount").value(80))
                         .andExpect(jsonPath("$.sources[0].sourceName").value("telegram"))
-                        .andExpect(jsonPath("$.sources[0].postCount").value(200));
+                        .andExpect(jsonPath("$.sources[0].postCount").value(200))
+                        .andExpect(jsonPath("$.sources[0].relevantCount").value(80));
             }
         }
 
@@ -530,6 +535,44 @@ class PostsControllerTest {
         }
     }
 
+    // =========================================================================
+    // GET /posts/{id}/replies
+    // =========================================================================
+
+    @Nested
+    class GetReplies {
+
+        @Test
+        void returnsAnswersWithTheirComments() throws Exception {
+            PostRepliesResponse.Comment comment = new PostRepliesResponse.Comment(
+                    "9", "bob", LocalDateTime.of(2026, 10, 22, 11, 0), "comentário");
+            PostRepliesResponse.Answer answer = new PostRepliesResponse.Answer(
+                    "7", "alice", LocalDateTime.of(2026, 10, 22, 10, 30), "resposta",
+                    Map.of("up_votes", "3"), List.of(comment));
+            when(postsService.getReplies("ha:ptbr:42"))
+                    .thenReturn(new PostRepliesResponse("ha:ptbr:42", ReplyKind.ANSWER, List.of(answer)));
+
+            mockMvc.perform(get("/posts/ha:ptbr:42/replies"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.postId").value("ha:ptbr:42"))
+                    .andExpect(jsonPath("$.kind").value("ANSWER"))
+                    .andExpect(jsonPath("$.answers[0].author").value("alice"))
+                    .andExpect(jsonPath("$.answers[0].createdAt").value("2026-10-22T10:30:00"))
+                    .andExpect(jsonPath("$.answers[0].meta.up_votes").value("3"))
+                    .andExpect(jsonPath("$.answers[0].comments[0].content").value("comentário"));
+        }
+
+        @Test
+        void serviceThrowsInvalidRequest_returns400() throws Exception {
+            when(postsService.getReplies("telegram:5"))
+                    .thenThrow(new InvalidRequestException("Replies are not available for post telegram:5"));
+
+            mockMvc.perform(get("/posts/telegram:5/replies"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Replies are not available for post telegram:5"));
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -539,7 +582,7 @@ class PostsControllerTest {
     }
 
     private PostsPageResponse emptyPage() {
-        return new PostsPageResponse(List.of(), new PostsPageResponse.Pagination(0, 20, 0, 0));
+        return new PostsPageResponse(List.of(), new PostsPageResponse.Pagination(0, 20, 0L, 0));
     }
 
     private PostStatsDTO emptyStats() {
