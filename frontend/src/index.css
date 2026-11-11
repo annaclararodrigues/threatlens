@@ -49,6 +49,8 @@
 
   /* Cores de marca das fontes */
   --color-source-telegram: #229ED9;
+  --color-source-forum: #D9822B;
+  --color-source-qa: #2E9E6B;
 
   /* Status */
   --color-danger: #F04438;

@@ -18,7 +18,7 @@ function isNoise(text) {
   return word.length < 3 || NOISE.has(word) || word.startsWith("utm") || /^\d+$/.test(word);
 }
 
-const WordCloud = ({ palavras, error, linkForWord }) => {
+const WordCloud = ({ palavras, loading = false, error, linkForWord }) => {
   const navigate = useNavigate();
   const isLight = useTheme();
   const svgRef = useRef(null);
@@ -46,12 +46,16 @@ const WordCloud = ({ palavras, error, linkForWord }) => {
   }, []);
 
   const words = useMemo(() => palavras.filter((p) => !isNoise(p.text)).slice(0, MAX_WORDS), [palavras]);
-  const message = error
-    ? "Não foi possível carregar os termos."
-    : words.length === 0 ? "Sem termos suficientes no período." : null;
+  // A consulta da nuvem é a mais lenta do dashboard: durante a carga não mostra a nuvem antiga
+  // (seria de outro período) nem a mensagem de vazio (pareceria que não há dados)
+  const message = loading
+    ? null
+    : error
+      ? "Não foi possível carregar os termos."
+      : words.length === 0 ? "Sem termos suficientes no período." : null;
 
   useEffect(() => {
-    if (!dimensions || message) return;
+    if (!dimensions || loading || message) return;
 
     const { width, height } = dimensions;
     const maxValue = d3.max(words, (d) => d.value) || 1;
@@ -101,13 +105,22 @@ const WordCloud = ({ palavras, error, linkForWord }) => {
     }
 
     return () => layout.stop();
-  }, [words, dimensions, message, isLight]);
+  }, [words, dimensions, loading, message, isLight]);
 
   return (
     <div className={style.wordCloudContainer}>
       <h2 className={style.description}>Nuvem de palavras</h2>
-      <div className={style.wordCloudComponent} ref={containerRef}>
-        {message ? <p className={style.empty}>{message}</p> : <svg ref={svgRef} className={style.svg} />}
+      <div className={style.wordCloudComponent} ref={containerRef} aria-busy={loading}>
+        {loading ? (
+          <div className={style.loading} role="status">
+            <span className={style.spinner} aria-hidden="true" />
+            Carregando termos…
+          </div>
+        ) : message ? (
+          <p className={style.empty}>{message}</p>
+        ) : (
+          <svg ref={svgRef} className={style.svg} />
+        )}
       </div>
     </div>
   );

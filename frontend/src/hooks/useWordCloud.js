@@ -3,7 +3,8 @@ import { getWordCloud } from "../services/post/postService";
 
 export function useWordCloud({ period, from, to, sources, limit } = {}) {
   const [words, setWords] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Começa carregando: a busca sai no primeiro efeito, e o vazio só deve aparecer depois da resposta
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const sourcesKey = sources?.join(",") ?? "";

@@ -48,8 +48,8 @@ export default function Overview() {
     sources,
     skip: !previousWindow,
   });
-  const { posts: topPosts, error: postsError, reload: reloadPosts } = usePosts({ sort: "SCORE", order: "DESC", size: TOP_POSTS_COUNT, period, from, to, sources });
-  const { words: wordCloudData, error: wordCloudError, reload: reloadWordCloud } = useWordCloud({ period, from, to, sources, limit: WORD_CLOUD_FETCH_LIMIT });
+  const { posts: topPosts, error: postsError, reload: reloadPosts } = usePosts({ sort: "SCORE", order: "DESC", size: TOP_POSTS_COUNT, period, from, to, sources, withTotal: false });
+  const { words: wordCloudData, loading: wordCloudLoading, error: wordCloudError, reload: reloadWordCloud } = useWordCloud({ period, from, to, sources, limit: WORD_CLOUD_FETCH_LIMIT });
 
   const analyzedPosts = stats?.summary.totalPosts ?? 0;
   const relevantPosts = stats?.summary.relevantPostsInPeriod ?? 0;
@@ -97,7 +97,7 @@ export default function Overview() {
         <DashboardState
           icon={<PiDatabase />}
           title="Nenhum post coletado ainda"
-          description="Assim que a coleta do Telegram trouxer mensagens, elas aparecem aqui. Se isso não acontecer, verifique se o coletor está ativo."
+          description="Assim que os coletores trouxerem posts, eles aparecem aqui. Se isso não acontecer, verifique se os coletores estão ativos."
         />
       );
     }
@@ -163,6 +163,7 @@ export default function Overview() {
             />
             <WordCloud
               palavras={wordCloudData}
+              loading={wordCloudLoading}
               error={wordCloudError}
               linkForWord={(word) => linkTo({ search: word })}
             />

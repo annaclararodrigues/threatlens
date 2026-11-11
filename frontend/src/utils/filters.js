@@ -38,7 +38,7 @@ export function readPeriod(searchParams) {
   return { period: shortcutOf(period) ? period : "ALL" };
 }
 
-// ?source=TELEGRAM ou ?source=TELEGRAM,REDDIT; valores desconhecidos são ignorados
+// ?source=TELEGRAM ou ?source=TELEGRAM,NULLEDBB; valores desconhecidos são ignorados
 export function readSources(searchParams) {
   const raw = searchParams.get("source");
   if (!raw) return [];

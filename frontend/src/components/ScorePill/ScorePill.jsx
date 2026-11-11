@@ -1,5 +1,5 @@
 import style from "./ScorePill.module.css";
-import { RELEVANCE_LEVELS, getRelevanceLevel } from "../../utils/relevance";
+import { RELEVANCE_LEVELS, formatScore, getRelevanceLevel } from "../../utils/relevance";
 
 const TONE_CLASS = {
   LOW: style.toneLow,
@@ -15,7 +15,7 @@ export default function ScorePill({ score, showLabel = false }) {
   const { label, range } = RELEVANCE_LEVELS[level];
   return (
     <span className={`${style.pill} ${TONE_CLASS[level]}`} title={`${label} relevância (${range})`}>
-      {score.toFixed(2)}
+      {formatScore(score)}
       {showLabel && ` · ${label}`}
     </span>
   );

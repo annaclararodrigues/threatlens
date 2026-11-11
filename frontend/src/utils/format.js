@@ -44,12 +44,20 @@ export function channelLabel(meta) {
   return meta?.channel_name ?? null;
 }
 
-// Origem do post: "Telegram – @canal"; fontes sem canal mostram só o nome da fonte
+// Origem do post: "Telegram – @canal" ou "Raddle – fórum"; sem canal/fórum mostra só o nome da fonte
 export function postOrigin(post) {
   const source = post?.source ? formatSource(post.source) : null;
-  const channel = channelLabel(post?.meta);
+  const channel = channelLabel(post?.meta) ?? post?.meta?.forum ?? null;
   if (source && channel) return `${source} – ${channel}`;
   return source ?? channel;
+}
+
+// O id da API vem prefixado com a fonte ("nulledbb:42", "ha:english:7"); nas listas,
+// onde a fonte já aparece ao lado, basta o número
+export function shortPostId(id) {
+  if (id == null) return "";
+  const text = String(id);
+  return text.slice(text.lastIndexOf(":") + 1);
 }
 
 export function formatDateTime(isoDate) {
