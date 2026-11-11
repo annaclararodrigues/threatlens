@@ -2,3 +2,7 @@
 
 # Configuração local do IntelliJ
 .idea/
+*.iml
+
+# Build (Maven)
+target/
