@@ -1,20 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { PiArrowUp, PiArrowDown, PiX, PiCopy, PiCheck, PiTelegramLogo, PiArrowSquareOut } from "react-icons/pi";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PiArrowUp, PiArrowDown, PiCaretDown, PiCaretUp, PiX, PiCopy, PiCheck, PiTelegramLogo, PiArrowSquareOut } from "react-icons/pi";
 import style from "./PostDrawer.module.css";
 import ScorePill from "../ScorePill/ScorePill";
-import { RELEVANCE_LEVELS, getRelevanceLevel } from "../../utils/relevance";
+import ExpandableText from "../ExpandableText/ExpandableText";
+import PostReplies from "./PostReplies";
+import { hasReplies, usePostReplies } from "../../hooks/usePostReplies";
+import { RELEVANCE_LEVELS, formatScore, getRelevanceLevel } from "../../utils/relevance";
 import { formatDateTime, formatSource } from "../../utils/format";
-import { sourceMetaEntries, stripEmojis } from "../../utils/entities";
+import { safeExternalUrl, sourceMetaEntries, splitCategories, stripEmojis } from "../../utils/entities";
 
 const TONE_CLASS = {
   LOW: style.toneLow,
   MEDIUM: style.toneMedium,
   HIGH: style.toneHigh,
 };
-
-// Acima disso a mensagem começa recolhida
-const COLLAPSE_LINES = 8;
-const COLLAPSE_CHARS = 600;
 
 function channelInfo(meta) {
   const username = meta?.channel_username?.replace(/^@+/, "");
@@ -54,21 +53,35 @@ function Section({ title, children }) {
   );
 }
 
-function OriginalMessage({ text }) {
-  const [expanded, setExpanded] = useState(false);
-  const long = text.split("\n").length > COLLAPSE_LINES || text.length > COLLAPSE_CHARS;
+// Metadados que descrevem o próprio post; o resto (canal, fórum, link...) diz de onde ele veio
+const POST_META_KEYS = new Set(["language", "tags", "votes", "up_votes", "down_votes", "points"]);
 
+// Detalhes que ficam atrás de "Mostrar todos os detalhes": o resumo fica com o que se usa na triagem
+const DETAIL_META_KEYS = new Set([...POST_META_KEYS, "telegram_channel_id", "link"]);
+
+function ChipsField({ label, pluralLabel = label, items }) {
+  if (items.length === 0) return null;
+  return (
+    <div className={`${style.fieldRow} ${style.chipsRow}`}>
+      <dt>{items.length > 1 ? pluralLabel : label}</dt>
+      <dd>
+        <ul className={style.chips}>
+          {items.map((item) => (
+            <li key={item} className={style.chip}>
+              {item}
+            </li>
+          ))}
+        </ul>
+      </dd>
+    </div>
+  );
+}
+
+function OriginalMessage({ title, text }) {
   return (
     <>
-      <blockquote className={style.message}>
-        {/* O corte fica num elemento interno para não vazar no padding da citação */}
-        <div className={long && !expanded ? style.messageCollapsed : undefined}>{text || "Sem conteúdo"}</div>
-      </blockquote>
-      {long && (
-        <button type="button" className={style.toggle} onClick={() => setExpanded((e) => !e)}>
-          {expanded ? "Mostrar menos" : "Mostrar tudo"}
-        </button>
-      )}
+      {title && <h4 className={style.messageTitle}>{title}</h4>}
+      <ExpandableText as="blockquote" className={style.message} text={text} />
     </>
   );
 }
@@ -95,7 +108,19 @@ export default function PostDrawer({ post, onClose, onPrev, onNext }) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [post, onClose, onPrev, onNext]);
 
-  const text = useMemo(() => stripEmojis(post?.content ?? post?.title ?? ""), [post]);
+  const replies = usePostReplies(post);
+  // Fica fora do post: quem abriu os detalhes continua vendo-os ao navegar entre posts
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Trocar de post (clique na lista ou ↑/↓) volta a leitura para o topo
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, 0);
+  }, [post?.id]);
+
+  // Título e conteúdo aparecem cada um no seu lugar: conteúdo vazio fica visível como "Sem conteúdo"
+  const text = useMemo(() => stripEmojis(post?.content ?? ""), [post]);
+  const title = useMemo(() => stripEmojis(post?.title ?? "") || null, [post]);
 
   if (!post) return null;
 
@@ -106,13 +131,21 @@ export default function PostDrawer({ post, onClose, onPrev, onNext }) {
   const channel = channelInfo(post.meta);
   const published = formatDateTime(post.createdAt);
   const classifiedAt = formatDateTime(classification?.classifiedAt);
-  const sourceMeta = sourceMetaEntries(post.meta);
+  const meta = sourceMetaEntries(post.meta);
+  const postMeta = meta.filter(({ key }) => POST_META_KEYS.has(key));
+  const sourceMeta = meta.filter(({ key }) => !POST_META_KEYS.has(key));
+  const hiddenCount = meta.filter(({ key }) => DETAIL_META_KEYS.has(key)).length;
+  const repliesLabel = replies.kind === "COMMENT" ? "Comentários" : "Respostas";
+  const repliesTitle = replies.loading || replies.error ? repliesLabel : `${repliesLabel} (${replies.answers.length})`;
+  const categories = splitCategories(post.category);
+  const originalUrl = safeExternalUrl(post.meta?.link);
+  const byline = channel.label ?? post.meta?.forum ?? post.author;
   return (
-    <aside className={style.drawer} role="dialog" aria-label="Detalhes do post">
+    <aside className={style.drawer} role="dialog" aria-label="Detalhes do post" data-post-drawer>
       <header className={style.header}>
         <div className={style.headerInfo}>
           {score != null && <ScorePill score={score} showLabel />}
-          <span className={style.meta}>{[channel.label, published].filter(Boolean).join(" · ")}</span>
+          <span className={style.meta}>{[byline, published].filter(Boolean).join(" · ")}</span>
         </div>
         <div className={style.headerActions}>
           <button type="button" onClick={onPrev} disabled={!onPrev} title="Post anterior (↑ ou K)" aria-label="Post anterior">
@@ -127,7 +160,7 @@ export default function PostDrawer({ post, onClose, onPrev, onNext }) {
         </div>
       </header>
 
-      <div className={style.scroll}>
+      <div className={style.scroll} ref={scrollRef}>
         <Section title="Classificação">
           <dl className={style.fields}>
             {score != null ? (
@@ -137,7 +170,7 @@ export default function PostDrawer({ post, onClose, onPrev, onNext }) {
                   <span className={style.scoreTrack}>
                     <span className={tone} style={{ width: `${Math.round(score * 100)}%` }} />
                   </span>
-                  <strong>{score.toFixed(2)}</strong>
+                  <strong>{formatScore(score)}</strong>
                   <span className={style.hint}>
                     {RELEVANCE_LEVELS[level].label} · {RELEVANCE_LEVELS[level].range}
                   </span>
@@ -155,12 +188,6 @@ export default function PostDrawer({ post, onClose, onPrev, onNext }) {
                 <dd>{classification.ioc ? "Sim" : "Não"}</dd>
               </>
             )}
-            {post.category && (
-              <>
-                <dt>Categoria</dt>
-                <dd>{post.category}</dd>
-              </>
-            )}
             {classifiedAt && (
               <>
                 <dt>Classificado</dt>
@@ -174,19 +201,17 @@ export default function PostDrawer({ post, onClose, onPrev, onNext }) {
           <dl className={style.fields}>
             <dt>Origem</dt>
             <dd>{formatSource(post.source)}</dd>
-            {published && (
-              <>
-                <dt>Publicado</dt>
-                <dd>{published}</dd>
-              </>
-            )}
-            {sourceMeta.map(({ key, label, value }) => (
+            {sourceMeta.filter(({ key }) => showDetails || !DETAIL_META_KEYS.has(key)).map(({ key, label, value }) => (
               <div key={key} className={style.fieldRow}>
                 <dt>{label}</dt>
                 <dd>
                   {key === "channel_username" && channel.url ? (
                     <a href={channel.url} target="_blank" rel="noopener noreferrer">
                       {channel.label} <PiArrowSquareOut aria-hidden="true" />
+                    </a>
+                  ) : key === "link" && originalUrl ? (
+                    <a href={originalUrl} target="_blank" rel="noopener noreferrer">
+                      {value} <PiArrowSquareOut aria-hidden="true" />
                     </a>
                   ) : (
                     value
@@ -197,9 +222,59 @@ export default function PostDrawer({ post, onClose, onPrev, onNext }) {
           </dl>
         </Section>
 
-        <Section title="Mensagem original">
-          <OriginalMessage key={post.id} text={text} />
+        <Section title="Post">
+          <dl className={style.fields}>
+            <dt>ID</dt>
+            <dd className={style.postId}>
+              <span>{post.id}</span>
+              <CopyButton value={String(post.id)} label="Copiar ID" className={style.copyInline} />
+            </dd>
+            {post.author && (
+              <>
+                <dt>Autor</dt>
+                <dd>{post.author}</dd>
+              </>
+            )}
+            {published && (
+              <>
+                <dt>Publicado</dt>
+                <dd>{published}</dd>
+              </>
+            )}
+            <ChipsField label="Categoria" pluralLabel="Categorias" items={categories} />
+            {showDetails && postMeta.map(({ key, label, value }) =>
+              key === "tags" ? (
+                <ChipsField key={key} label="Tags" items={splitCategories(value)} />
+              ) : (
+                <div key={key} className={style.fieldRow}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              )
+            )}
+          </dl>
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              className={style.detailsToggle}
+              onClick={() => setShowDetails((s) => !s)}
+              aria-expanded={showDetails}
+            >
+              {showDetails ? <PiCaretUp aria-hidden="true" /> : <PiCaretDown aria-hidden="true" />}
+              {showDetails ? "Mostrar menos detalhes" : `Mostrar todos os detalhes (+${hiddenCount})`}
+            </button>
+          )}
         </Section>
+
+        <Section title="Mensagem original">
+          <OriginalMessage key={post.id} title={title} text={text} />
+        </Section>
+
+        {hasReplies(post) && (
+          <Section title={repliesTitle}>
+            <PostReplies key={post.id} {...replies} onRetry={replies.reload} />
+          </Section>
+        )}
       </div>
 
       <footer className={style.footer}>
@@ -208,8 +283,12 @@ export default function PostDrawer({ post, onClose, onPrev, onNext }) {
             <PiTelegramLogo aria-hidden="true" /> Abrir canal no Telegram
           </a>
         )}
-        <CopyButton value={text} label="Copiar texto" className={style.action} showLabel />
-        <span className={style.postId}>ID {post.id}</span>
+        {originalUrl && (
+          <a className={style.action} href={originalUrl} target="_blank" rel="noopener noreferrer">
+            <PiArrowSquareOut aria-hidden="true" /> Abrir link original
+          </a>
+        )}
+        <CopyButton value={text || title || ""} label="Copiar texto" className={style.action} showLabel />
       </footer>
     </aside>
   );

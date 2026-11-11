@@ -19,3 +19,8 @@ export async function getWordCloud(params = {}) {
   const { data } = await api.get("/posts/wordcloud", { params });
   return data;
 }
+
+export async function getPostReplies(postId) {
+  const { data } = await api.get(`/posts/${encodeURIComponent(postId)}/replies`);
+  return data;
+}
