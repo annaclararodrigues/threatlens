@@ -24,10 +24,10 @@ export default function RelevantPostsTable({ mostRelevantPosts, error, seeAllLin
       ) : (
         <ul className={style.list}>
           {mostRelevantPosts.map((post, index) => {
-            const score = post.classification?.score ?? post.rate;
+            const score = post.classification?.score;
             const text = cleanText(post.title ?? post.content);
             const origin = postOrigin(post);
-            const time = formatRelativeTime(post.createdAt ?? post.created_at);
+            const time = formatRelativeTime(post.createdAt);
             const hasIoc = post.classification?.ioc;
 
             return (
