@@ -143,8 +143,8 @@ final class PostSourceQueries {
                 PostSource.LEGITCARDERS, PostSource.RADDLE)) {
             queries.put(source, maxClassifiedAt(prefix(source) + "_classified_posts"));
         }
-        queries.put(PostSource.HA, greatestClassifiedAt(PostSource.HA, List.of("english", "ptbr")));
-        queries.put(PostSource.DEEP, greatestClassifiedAt(PostSource.DEEP, List.of("enus", "eses", "ptbr")));
+        queries.put(PostSource.HA, greatestClassifiedAt(PostSource.HA, HA_LANGUAGES));
+        queries.put(PostSource.DEEP, greatestClassifiedAt(PostSource.DEEP, DEEP_LANGUAGES));
         return queries;
     }
 
@@ -153,9 +153,9 @@ final class PostSourceQueries {
     }
 
     // GREATEST ignora NULLs, então idiomas sem dados não atrapalham
-    private static String greatestClassifiedAt(PostSource source, List<String> tableSuffixes) {
-        return tableSuffixes.stream()
-                .map(suffix -> maxClassifiedAt(prefix(source) + "_classified_posts_" + suffix))
+    private static String greatestClassifiedAt(PostSource source, List<Language> languages) {
+        return languages.stream()
+                .map(language -> maxClassifiedAt(prefix(source) + "_classified_posts_" + language.tableSuffix()))
                 .collect(Collectors.joining(", ", "GREATEST(", ")"));
     }
 
