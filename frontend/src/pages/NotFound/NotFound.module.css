@@ -10,17 +10,17 @@
 
 .code {
   font-size: 6rem;
-  color: #6558ff;
+  color: var(--color-accent);
   line-height: 1;
 }
 
 .message {
   font-size: 1.25rem;
-  color: #b0b0b0;
+  color: var(--color-text-muted);
 }
 
 .link {
-  color: #6558ff;
+  color: var(--color-accent);
   font-size: 1rem;
   text-decoration: none;
 }

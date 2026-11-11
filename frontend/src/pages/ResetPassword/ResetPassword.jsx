@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import style from "./ResetPassword.module.css";
 import { authService } from "../../services/auth/authService";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import PasswordInput from "../../components/PasswordInput/PasswordInput";
+import AuthLayout, { AuthError, AuthSubmit } from "../../components/AuthLayout/AuthLayout";
+import style from "../../components/AuthLayout/AuthLayout.module.css";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -37,33 +39,36 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className={style.container}>
-      <h1>
-        Threat<span className={style.highlight}>Lens</span>
-      </h1>
-      <p>Defina sua nova senha.</p>
+    <AuthLayout subtitle="Defina sua nova senha">
       <form onSubmit={handleSubmit} className={style.form}>
-        <input
-          type="password"
-          placeholder="Nova senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Confirme a nova senha"
-          value={passwordConfirm}
-          onChange={(e) => setPasswordConfirm(e.target.value)}
-          required
-        />
-        {error && <p className={style.errorMsg}>{error}</p>}
-        <input
-          type="submit"
-          value={loading ? "Salvando..." : "Redefinir senha"}
-          disabled={loading}
-        />
+        <div className={style.field}>
+          <label htmlFor="password" className={style.label}>Nova senha</label>
+          <PasswordInput
+            id="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoFocus
+          />
+        </div>
+
+        <div className={style.field}>
+          <label htmlFor="passwordConfirm" className={style.label}>Confirmar nova senha</label>
+          <PasswordInput
+            id="passwordConfirm"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            required
+          />
+        </div>
+
+        <AuthError>{error}</AuthError>
+        <AuthSubmit loading={loading} loadingLabel="Salvando...">Redefinir senha</AuthSubmit>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

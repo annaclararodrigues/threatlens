@@ -1,0 +1,291 @@
+/* Brilho roxo bem sutil atrás do card, para o formulário não flutuar no vazio */
+.page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(123, 108, 246, 0.08), transparent 70%);
+}
+
+/* Mesma borda dos cards do dashboard */
+.card {
+    width: min(30rem, 100%);
+    padding: 3rem 2.75rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+}
+
+.brand {
+    display: flex;
+    justify-content: center;
+}
+
+/* As imagens têm margem transparente; a largura dá o tamanho visual da marca */
+.logo {
+    display: block;
+    width: 14rem;
+    height: auto;
+}
+
+.logoLight {
+    display: none;
+}
+
+:global(body.light) .logoDark {
+    display: none;
+}
+
+:global(body.light) .logoLight {
+    display: block;
+}
+
+.subtitle {
+    margin-top: -0.75rem;
+    color: var(--color-text-muted);
+    font-size: 15px;
+    text-align: center;
+}
+
+.highlight {
+    color: var(--color-text);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.label {
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Link pequeno abaixo de um campo (ex.: "Esqueci a senha"), à esquerda */
+.fieldLink {
+    align-self: flex-start;
+    margin-top: 0.1rem;
+    color: var(--color-accent);
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.fieldLink:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+}
+
+.form input {
+    width: 100%;
+    height: 3rem;
+    padding: 0 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* Placeholder em cinza: não pode parecer um valor já preenchido */
+.form input::placeholder {
+    color: var(--color-text-subtle);
+}
+
+/* Foco visível: borda roxa */
+.form input:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+/* Preenchimento automático do Chrome: ele força um fundo claro e ignora background-color.
+   Uma sombra interna da cor do campo cobre esse fundo; o texto mantém a cor do tema. */
+.form input:-webkit-autofill,
+.form input:-webkit-autofill:hover {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-bg) inset;
+    -webkit-text-fill-color: var(--color-text);
+    caret-color: var(--color-text);
+    transition: background-color 9999s ease-out 0s;
+}
+
+/* No foco, mantém o halo roxo junto com a cobertura do autofill */
+.form input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-bg) inset, 0 0 0 3px var(--color-accent-soft);
+    -webkit-text-fill-color: var(--color-text);
+}
+
+.error {
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--radius-md);
+    background-color: rgba(240, 68, 56, 0.1);
+    color: var(--color-relevance-high-text);
+    font-size: 14px;
+}
+
+.submit {
+    height: 3rem;
+    margin-top: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    border: none;
+    border-radius: var(--radius-md);
+    background-color: var(--color-accent);
+    color: var(--color-on-accent);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.submit:hover:not(:disabled) {
+    background-color: var(--color-accent-hover);
+}
+
+.submit:disabled {
+    opacity: 0.75;
+    cursor: default;
+}
+
+.spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: var(--color-on-accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinner {
+        animation-duration: 2s;
+    }
+}
+
+.footer {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Link de destaque no rodapé; linkButton é o mesmo visual para ações (ex.: reenviar código) */
+/* color/font-size explícitos: vencem os globais de "a" do index.css */
+.link,
+.linkButton {
+    color: var(--color-accent);
+    font-size: inherit;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.linkButton {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+.link:hover,
+.linkButton:hover:not(:disabled) {
+    color: var(--color-accent);
+    text-decoration: underline;
+}
+
+.linkButton:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* Código de verificação: uma caixa por dígito */
+.otp {
+    display: flex;
+    justify-content: center;
+    gap: clamp(0.35rem, 2vw, 0.6rem);
+}
+
+.form .otp input {
+    flex: 1;
+    min-width: 0;
+    max-width: 3.25rem;
+    height: 3.5rem;
+    padding: 0;
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+/* Light mode (após logout o tema claro continua aplicado no body) */
+:global(body.light) .page {
+    background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(109, 94, 240, 0.08), transparent 70%);
+}
+
+:global(body.light) .card {
+    background-color: var(--color-surface-light);
+}
+
+:global(body.light) .label,
+:global(body.light) .highlight {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .subtitle {
+    color: var(--color-text-muted-light);
+}
+
+:global(body.light) .form input {
+    background-color: var(--color-surface-light);
+    color: var(--color-text-light);
+}
+
+:global(body.light) .form input:-webkit-autofill,
+:global(body.light) .form input:-webkit-autofill:hover {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-surface-light) inset;
+    -webkit-text-fill-color: var(--color-text-light);
+    caret-color: var(--color-text-light);
+}
+
+:global(body.light) .form input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-surface-light) inset, 0 0 0 3px var(--color-accent-soft);
+    -webkit-text-fill-color: var(--color-text-light);
+}
+
+:global(body.light) .form input::placeholder {
+    color: var(--color-text-muted-light);
+    opacity: 0.7;
+}
+
+:global(body.light) .footer {
+    color: var(--color-text-muted-light);
+}
+
+@media (max-width: 425px) {
+    .card {
+        padding: 2.25rem 1.25rem 1.75rem;
+    }
+}

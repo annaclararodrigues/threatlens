@@ -3,8 +3,10 @@ package com.backend.threatlens.controller;
 import com.backend.threatlens.dto.request.PostsQueryDTO;
 import com.backend.threatlens.dto.request.StatsQueryDTO;
 import com.backend.threatlens.dto.request.WordCloudQueryDTO;
+import com.backend.threatlens.dto.response.CollectionStatusDTO;
 import com.backend.threatlens.dto.response.PostStatsDTO;
 import com.backend.threatlens.dto.response.WordCloudDTO;
+import com.backend.threatlens.dto.response.posts.PostRepliesResponse;
 import com.backend.threatlens.dto.response.posts.PostsPageResponse;
 import com.backend.threatlens.service.PostsService;
 import jakarta.validation.Valid;
@@ -12,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,9 +35,19 @@ public class PostsController {
         return ResponseEntity.ok(postsService.getStats(query));
     }
 
+    @GetMapping("/collection-status")
+    public ResponseEntity<CollectionStatusDTO> getCollectionStatus() {
+        return ResponseEntity.ok(postsService.getCollectionStatus());
+    }
+
     @GetMapping("/wordcloud")
     public WordCloudDTO getWordCloud(@Valid @ModelAttribute WordCloudQueryDTO query) {
         return postsService.getWordCloud(query);
+    }
+
+    @GetMapping("/{id}/replies")
+    public ResponseEntity<PostRepliesResponse> getReplies(@PathVariable String id) {
+        return ResponseEntity.ok(postsService.getReplies(id));
     }
 
 }

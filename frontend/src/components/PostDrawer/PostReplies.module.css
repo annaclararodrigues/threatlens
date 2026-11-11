@@ -1,0 +1,161 @@
+.status {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.answers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    list-style: none;
+}
+
+/* Cada resposta é um cartão; os comentários ficam dentro dele, recuados */
+.answer {
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.answerHeader,
+.commentHeader {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.kind {
+    padding: 0.05rem 0.45rem;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.kindAnswer {
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent);
+}
+
+.kindComment {
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+}
+
+.byline {
+    min-width: 0;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.byline strong {
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.votes {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-left: auto;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.votes span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.answerText {
+    color: var(--color-text);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.comments {
+    margin-top: 0.85rem;
+    padding: 0.1rem 0 0.1rem 0.85rem;
+    border-left: 2px solid var(--color-border);
+}
+
+.commentsTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.6rem;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.commentList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    list-style: none;
+}
+
+.commentHeader {
+    margin-bottom: 0.3rem;
+}
+
+.commentIcon {
+    color: var(--color-text-subtle);
+}
+
+.commentText {
+    color: var(--color-text);
+    font-size: 13px;
+    line-height: 1.55;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    opacity: 0.9;
+}
+
+.more {
+    margin-top: 0.6rem;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-accent);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.more:hover {
+    text-decoration: underline;
+}
+
+/* ── Tema claro ── */
+:global(body.light) .answer {
+    background-color: var(--color-bg-light);
+}
+
+:global(body.light) .answerText,
+:global(body.light) .commentText,
+:global(body.light) .byline strong {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .status,
+:global(body.light) .byline,
+:global(body.light) .votes,
+:global(body.light) .commentsTitle,
+:global(body.light) .kindComment {
+    color: var(--color-text-muted-light);
+}
+
+:global(body.light) .comments {
+    border-left-color: var(--color-surface-alt-light);
+}

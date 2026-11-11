@@ -1,0 +1,287 @@
+.wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.trigger {
+    display: inline-flex;
+    align-items: center;
+    height: 2.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    overflow: hidden;
+}
+
+.triggerActive {
+    border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+    background-color: var(--color-accent-soft);
+}
+
+.triggerButton {
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.9rem;
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.triggerButton svg {
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+
+.triggerButton .caret {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.clear {
+    height: 100%;
+    padding: 0 0.7rem;
+    background: none;
+    border: none;
+    border-left: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.clear:hover {
+    color: var(--color-text);
+}
+
+/* Modo compact: o segmento (className do pai) não tem padding; ele fica nos botões,
+   para a área de clique ir até a borda do segmento */
+.compactButton,
+.compactClear {
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.compactButton {
+    gap: 6px;
+    padding: 0 16px;
+    white-space: nowrap;
+}
+
+.compactButton svg {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.compactButtonWithClear {
+    padding-right: 6px;
+}
+
+.compactClear {
+    padding: 0 12px 0 2px;
+    opacity: 0.7;
+}
+
+.compactClear:hover {
+    opacity: 1;
+}
+
+.popover {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    z-index: var(--z-overlay);
+    display: flex;
+    background-color: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    max-width: calc(100vw - 2rem);
+}
+
+.alignRight {
+    right: 0;
+}
+
+.alignLeft {
+    left: 0;
+}
+
+.shortcuts {
+    list-style: none;
+    padding: 0.75rem;
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 11rem;
+}
+
+.shortcuts li {
+    margin: 0;
+}
+
+.shortcut {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.shortcut:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.shortcut.shortcutActive {
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent);
+    font-weight: 500;
+}
+
+.calendar {
+    padding: 0.75rem 1rem;
+    color: var(--color-text);
+}
+
+.calendar :global(.rdp-root) {
+    --rdp-accent-color: var(--color-accent);
+    --rdp-accent-background-color: var(--color-accent-soft);
+    --rdp-range_middle-background-color: var(--color-accent-soft);
+    --rdp-range_middle-color: inherit;
+    --rdp-range_start-date-background-color: var(--color-accent);
+    --rdp-range_end-date-background-color: var(--color-accent);
+    --rdp-range_start-color: var(--color-on-accent);
+    --rdp-range_end-color: var(--color-on-accent);
+    --rdp-today-color: var(--color-accent);
+    --rdp-day-height: 36px;
+    --rdp-day-width: 36px;
+    --rdp-day_button-height: 34px;
+    --rdp-day_button-width: 34px;
+    --rdp-disabled-opacity: 0.3;
+    --rdp-outside-opacity: 0.4;
+    font-size: 14px;
+}
+
+.calendar :global(.rdp-selected) {
+    font-size: inherit;
+    font-weight: 500;
+}
+
+.calendar :global(.rdp-weekday) {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.calendar :global(.rdp-caption_label) {
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.draftLabel {
+    color: var(--color-text-muted);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.apply {
+    padding: 0.45rem 1.1rem;
+    border: none;
+    border-radius: var(--radius-md);
+    background-color: var(--color-accent);
+    color: var(--color-on-accent);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.apply:hover:not(:disabled) {
+    background-color: var(--color-accent-hover);
+}
+
+.apply:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+:global(body.light) .trigger {
+    background-color: var(--color-surface-light);
+    color: var(--color-text-light);
+}
+
+:global(body.light) .trigger.triggerActive {
+    background-color: var(--color-accent-soft);
+}
+
+:global(body.light) .popover {
+    background-color: var(--color-surface-light);
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.15);
+}
+
+:global(body.light) .shortcut,
+:global(body.light) .calendar {
+    color: var(--color-text-light);
+}
+
+:global(body.light) .shortcut:hover {
+    background-color: var(--color-surface-muted-light);
+}
+
+:global(body.light) .shortcut.shortcutActive {
+    color: var(--color-accent);
+}
+
+:global(body.light) .draftLabel,
+:global(body.light) .calendar :global(.rdp-weekday) {
+    color: var(--color-text-muted-light);
+}
+
+@media (max-width: 640px) {
+    .popover {
+        flex-direction: column;
+        position: fixed;
+        left: 1rem;
+        right: 1rem;
+        top: auto;
+        bottom: 1rem;
+    }
+
+    .shortcuts {
+        flex-direction: row;
+        flex-wrap: wrap;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .shortcut {
+        width: auto;
+    }
+}

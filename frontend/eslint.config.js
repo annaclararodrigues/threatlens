@@ -29,9 +29,12 @@ export default [
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
       'react/jsx-no-target-blank': 'off',
+      // O projeto não usa PropTypes (nem TypeScript); a regra só gerava ruído
+      'react/prop-types': 'off',
       'react-refresh/only-export-components': [
         'warn',
-        { allowConstantExport: true },
+        // Contextos exportam o Provider junto com o hook de acesso
+        { allowConstantExport: true, allowExportNames: ['useAuth', 'useToast'] },
       ],
     },
   },

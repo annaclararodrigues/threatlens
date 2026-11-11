@@ -1,6 +1,6 @@
 .env
 
-# IDE (IntelliJ)
+# Configuração local do IntelliJ
 .idea/
 *.iml
 

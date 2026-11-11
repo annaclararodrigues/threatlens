@@ -1,0 +1,45 @@
+.block {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background:
+        linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.04) 50%, transparent 100%) -100% 0 / 50% 100% no-repeat,
+        var(--color-surface);
+    animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.kpiRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.kpi {
+    height: 10rem;
+}
+
+.list {
+    height: 19rem;
+}
+
+.donut {
+    width: 100%;
+    min-height: 31rem;
+}
+
+@keyframes shimmer {
+    to {
+        background-position: 200% 0, 0 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .block {
+        animation: none;
+    }
+}
+
+:global(body.light) .block {
+    background:
+        linear-gradient(90deg, transparent 0%, rgba(16, 24, 40, 0.05) 50%, transparent 100%) -100% 0 / 50% 100% no-repeat,
+        var(--color-surface-light);
+}
